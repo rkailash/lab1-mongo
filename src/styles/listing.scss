@@ -1,0 +1,109 @@
+@import 'constants.scss';
+
+.listing {
+  font-family: $font;
+  * {
+    color: $black;
+  }
+  .header {
+    border: 0;
+  }
+  .top-container {
+    border-bottom: 1px solid $gray;
+  }
+  .search {
+    background: white;
+    border-color: #5e6d77;
+    margin-right: auto;
+    margin-left: 30px;
+    .DateRangePicker, .location-search, .dropdown-group {
+      border: 1px solid #5e6d77;
+    }
+    button.submit {
+      display: none;
+    }
+  }
+  .image-gallery .image {
+    background-size: cover!important;
+  }
+  .list-container {
+    padding: 32px 30px 12px 42px;
+    h4 {
+      font-size: 20px;
+      margin-bottom: 4vh;
+    }
+    .list-item {
+      width: 100%;
+      height: 200px;
+      display: flex;
+      transition: box-shadow 250ms ease;
+      background: #fff;
+      cursor: pointer;
+      border-radius: 4px;
+      -webkit-box-shadow: 0px 0px 1px 1px rgba(0,0,0,0.1);
+        -moz-box-shadow: 0px 0px 1px 1px rgba(0,0,0,0.1);
+        box-shadow: 0px 0px 1px 1px rgba(0,0,0,0.1);
+      &:not(:last-child) {
+        margin-bottom: 16px;
+      }
+      &:hover {
+        -webkit-box-shadow: 0px 0px 10px 5px rgba(0,0,0,0.2);
+        -moz-box-shadow: 0px 0px 10px 5px rgba(0,0,0,0.2);
+        box-shadow: 0px 0px 10px 5px rgba(0,0,0,0.2);
+        .right-container .top-container h4 {
+          color: $blue;
+        }
+      }
+      .image-gallery {
+        flex: none;
+        width: 285px;
+        height: auto;
+        position: relative;
+      }
+      .right-container {
+        flex: 0 1 100%;
+        position: relative;
+        .top-container {
+          padding-left: 12px;
+          h4 {
+            padding-top: 12px;
+            &:hover {
+              text-decoration: underline;
+            }
+          }
+          .property-info {
+            >span {
+              padding: 0 8px;
+              &:not(:last-child) {
+                border-right: 1px solid $gray;
+              }
+              &:first-child {
+                padding-left: 0;
+              }
+            }
+          }
+        }
+        .bottom-strip {
+          background: $gray;
+          position: absolute;
+          width: 100%;
+          height: 56px;
+          bottom: 0;
+          .rating {
+            top: 50%;
+            right: 0;
+            bottom: 0;
+            transform: translate(0,-50%);
+            position: absolute;
+            margin-right: 12px;
+          }
+          p {
+            font-size: 18px;
+            line-height: 56px;
+            padding-left: 12px;
+          }
+        }
+      }
+    }
+  }
+}

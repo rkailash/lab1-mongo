@@ -1,0 +1,68 @@
+@import "constants.scss";
+
+.product-page {
+  .header {
+    border: 0;
+  }
+  .headers {
+    border-bottom: 1px solid $gray;
+  }
+  .search {
+    background: white;
+    border-color: #5e6d77;
+    margin-right: auto;
+    margin-left: 30px;
+    .DateRangePicker, .location-search, .dropdown-group {
+      border: 1px solid #5e6d77;
+    }
+    button.submit {
+      background: white;
+      border: 1px solid $blue;
+      color: $black;
+    }
+  }
+  .top-container {
+    display: flex;
+    height: 540px;
+    padding: 0 calc(2.5vw + 16px);
+    .image-gallery {
+      flex: 0 1 100%;
+    }
+    .booking-details {
+      flex: none;
+      width: 450px;
+    }
+  }
+  .fullscreen-gallery {
+    position: fixed;
+    background: $black;
+    width: 100vw;
+    height: 100vh;
+    top: 0;
+    left: 0;
+    z-index: 99999;
+    .image-gallery {
+      padding: 0 112px;
+      margin: auto;
+      .count {
+        top: 0;
+        margin-top: 32px;
+      }
+    }
+    .close-gallery {
+      position: absolute;
+      z-index: 2;
+      top: 0;
+      right: 0;
+      width: 40px;
+      height: 40px;
+      font-size: 28px;
+      margin: 32px 32px 0 0;
+      background: rgba(#000, 0.7);
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+  }
+}

@@ -1,0 +1,111 @@
+@import "constants.scss";
+
+.traveler {
+  min-height: 100vh;
+  font-family: 'Lato', sans-serif;
+  ul.nav {
+    width: 100%;
+    height: 56px;
+    border-bottom: 1px solid $offwhite;
+		box-shadow: 0 0 6px 2px rgba(72,72,72,0.17);
+    position: relative;
+    li {
+      display: inline-block;
+      width: 120px;
+      height: 100%;
+      padding: 0 4px;
+      position: relative;
+      a {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        &:after {
+          position: absolute;
+          background: $blue;
+          height: 0;
+          width: 0;
+          content: '';
+          display: block;
+          bottom: 0;
+          transition: width 400ms ease-in-out, height 400ms ease;
+        }
+        &:hover {
+          &:after {
+            width: 100%;
+            height: 3px;
+          }
+        }
+      }
+    }
+  }
+  .results {
+    position: relative;
+    .mytrips {
+      text-align: center;
+      .start-search {
+        padding: 12px 16px;
+        color: #fff;
+      }
+    }
+    .profile {
+      width: 60vw;
+      min-width: 600px;
+      margin: 24px auto;
+      border: 1px solid $offwhite;
+      padding: 12px 32px;
+      input:focus, select:focus, textarea:focus {
+        outline: none;
+        -webkit-box-shadow: none;
+        box-shadow: none;
+        border-color: #ced4da;
+      }
+      h1 {
+        text-align: center;
+        margin-bottom: 32px;
+      }
+      .form-group {
+        width: auto;
+        position: relative;
+        display: flex;
+        justify-content: center;
+        &.small {
+          width: 300px;
+        }
+        &.gender {
+          width: 170px;
+        }
+        &:after {
+          position: absolute;
+          background: $blue;
+          height: 0;
+          width: 0;
+          content: '';
+          display: block;
+          bottom: 0;
+          transition: width 400ms ease-in-out, height 400ms ease;
+        }
+        &.active {
+          &:after {
+            width: 100%;
+            height: 3px;
+          }
+        }
+      }
+      input[type="text"], input[type="phone"] {
+        width: 300px;
+        height: 56px;
+      }
+      select {
+        width: 170px;
+        height: 56px;
+      }
+      .save-changes {
+        background: $blue;
+        border-radius: 40px;
+        padding: 12px 32px;
+      }
+    }
+  }
+}
