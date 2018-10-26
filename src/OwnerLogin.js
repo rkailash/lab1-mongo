@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+import { connect } from "react-redux";
 import { Redirect, Link } from "react-router-dom";
 import cookie from "react-cookies";
 import Header from "./Header";
@@ -25,15 +26,16 @@ class OwnerLogin extends Component {
   };
   handleSubmit = e => {
     e.preventDefault();
-    this.props.handleSubmit({...this.props.account, type: "owner"});
+    this.props.handleSubmit({ ...this.props.account, type: "owner" });
   };
   render() {
     const { account, authFlag, showLoginError } = this.props;
     /*    if (this.state.signUpFlag === true) return <Redirect to="/Register" />;
   */
-    if (this.state.signUpFlag === true) return <Redirect to="/Register:owner" />;
+    if (this.state.signUpFlag === true)
+      return <Redirect to="/Register:owner" />;
     else if (authFlag && cookie.load("user_cookie")) {
-      return <Redirect to="/"/>;
+      return <Redirect to="/Owner" />;
     } else {
       return (
         <div className="owner-login">

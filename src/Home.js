@@ -16,6 +16,19 @@ class Home extends Component {
       items: []
     };
   }
+
+  // componentDidMount() {
+  //   const data = { location: "San Jose" };
+  //   axios.post("http://localhost:3001/Home", data).then(response => {
+  //     console.log("Axios POST response:", response.status);
+  //     if (response.status === 200) {
+  //       console.log(response);
+  //     } else {
+  //       console.log(response);
+  //     }
+  //   });
+  // }
+
   onClickSearch = query => {
     this.props.saveSearchQuery(query);
     const startDate = moment(query.startDate).format("YYYY-MM-DD");

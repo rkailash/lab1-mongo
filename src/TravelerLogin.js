@@ -18,7 +18,8 @@ class Login extends Component {
   handleChange = e => {
     this.props.handleChange(e);
   };
-  handleSubmit = () => this.props.handleSubmit({...this.props.account, type: "traveler"});
+  handleSubmit = () =>
+    this.props.handleSubmit({ ...this.props.account, type: "traveler" });
   handleSignUp = e => {
     e.preventDefault();
     this.setState({ signUpFlag: true });

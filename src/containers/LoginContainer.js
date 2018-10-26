@@ -2,7 +2,7 @@ import { connect } from "react-redux";
 import React, { Component } from "react";
 import { handleLoginChange, handleLogin } from "actions";
 import TravelerLogin from "../TravelerLogin";
-import {toastr} from 'react-redux-toastr'
+import { toastr } from "react-redux-toastr";
 import OwnerLogin from "../OwnerLogin";
 
 const mapStateToProps = state => {
@@ -23,12 +23,13 @@ const mapDispatchToProps = dispatch => ({
 class LoginContainer extends Component {
   state = {};
   componentDidUpdate(prevProps) {
-    if(prevProps.authFlag !== this.props.authFlag) {
+    if (prevProps.authFlag !== this.props.authFlag) {
       this.props.setUserInfo(this.props.userInfo);
-      toastr.success(`Welcome, ${this.props.userInfo.firstname}!`)
+      toastr.success(`Welcome, ${this.props.userInfo.firstname}!`);
     }
   }
   render() {
+    console.log("State updated", this.props.authFlag);
     return this.props.location.pathname === "/OwnerLogin" ? (
       <OwnerLogin {...this.props} />
     ) : (

@@ -93,13 +93,13 @@ export const handleLogout = () => {
 export const registerUser = data => {
   return dispatch => {
     axios.defaults.withCredentials = true;
-    return axios.post("http://localhost:3001/Register", data).then(
-      res => {
-        dispatch(registerSuccess(response.data));
-      },
-      err => {
+    return axios
+      .post("http://localhost:3001/Register", data)
+      .then(res => {
+        dispatch(registerSuccess(res.data));
+      })
+      .catch(err => {
         dispatch(registerFailure());
-      }
-    );
+      });
   };
 };

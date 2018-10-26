@@ -8,10 +8,10 @@ import Header from "./Header";
 import "styles/owner.scss";
 
 const navList = [
-  { value: "location", label: "Location", imgUrl: '/placeholder.svg' },
-  { value: "details", label: "Details", imgUrl: '/edit.svg' },
-  { value: "photos", label: "Photos", imgUrl: '/photo.svg' },
-  { value: "pricing", label: "Pricing", imgUrl: '/hand.svg' }
+  { value: "location", label: "Location", imgUrl: "/placeholder.svg" },
+  { value: "details", label: "Details", imgUrl: "/edit.svg" },
+  { value: "photos", label: "Photos", imgUrl: "/photo.svg" },
+  { value: "pricing", label: "Pricing", imgUrl: "/hand.svg" }
 ];
 
 const NextButton = ({ onClickNext }) => (
@@ -34,6 +34,29 @@ class Owner extends Component {
       location: undefined,
       price: 0
     };
+  }
+
+  componentDidMount() {
+    const data = {
+      details: {
+        headline: "Great place",
+        accomodates: 3,
+        bathrooms: 3,
+        bedrooms: 4,
+        type: "Cottage"
+      },
+
+      price: 125,
+      location: "San Jose"
+    };
+    axios.post("http://localhost:3001/Owner", data).then(response => {
+      console.log("Axios POST response:", response.status);
+      if (response.status === 200) {
+        console.log(response);
+      } else {
+        console.log(response);
+      }
+    });
   }
   renderActiveNav = () => {
     switch (this.state.activeNav) {
@@ -109,13 +132,13 @@ class Owner extends Component {
     const length = navList.length;
     this.setState({ activeNav: navList[(currentIndex + 1) % length].value });
   };
-  onClickNext = () => {
-    const currentIndex = navList.findIndex(
-      i => i.value === this.state.activeNav
-    );
-    const length = navList.length;
-    this.setState({ activeNav: navList[(currentIndex + 1) % length].value });
-  };
+  // onClickNext = () => {
+  //   const currentIndex = navList.findIndex(
+  //     i => i.value === this.state.activeNav
+  //   );
+  //   const length = navList.length;
+  //   this.setState({ activeNav: navList[(currentIndex + 1) % length].value });
+  // };
   render() {
     const { activeNav } = this.state;
     return (
@@ -128,7 +151,11 @@ class Owner extends Component {
                 className={`${item.value === activeNav ? "active" : ""}`}
                 onClick={() => this.setState({ activeNav: item.value })}
               >
-                <img src={`/images/${item.imgUrl}`} alt={item.value} title={item.value} />
+                <img
+                  src={`/images/${item.imgUrl}`}
+                  alt={item.value}
+                  title={item.value}
+                />
                 <span>{item.label}</span>
               </li>
             ))}

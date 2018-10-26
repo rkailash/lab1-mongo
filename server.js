@@ -1,12 +1,32 @@
 const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
-const session = require("express-session");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const path = require("path");
+const passport = require("passport");
+const config = require("./config/settings");
+const morgan = require("morgan");
+const jwt = require("jsonwebtoken");
 
 var serveStatic = require("serve-static");
+
+app.use(bodyParser.urlencoded({ extended: true }));
+
+// app.use(
+//   session({
+//     secret: "kailash",
+//     resave: false, // Forces the session to be saved back to the session store, even if the session was never modified during the request
+//     saveUninitialized: false, // Force to save uninitialized session to db. A session is uninitialized when it is new but not modified.
+//     duration: 60 * 60 * 1000, // Overall duration of Session : 30 minutes : 1800 seconds
+//     activeDuration: 5 * 60 * 1000
+//   })
+// );
+app.use(bodyParser.json());
+app.use(cookieParser("kailash"));
+
+app.use(morgan("dev"));
+app.use(passport.initialize());
 
 //MongoDB connection
 const mongoose = require("mongoose");
@@ -19,42 +39,35 @@ db.on("error", console.error.bind(console, "MongoDB connection error:"));
 
 //Models
 const UserModel = require("./models/User");
-const PropModel = require("./models/Property");
+const PropModel = require("./models/property");
 
-let owner = new UserModel({
-  _id: new mongoose.Types.ObjectId(),
-  email: "kailash@kailash.com",
-  password: "admin"
-});
-owner.save(err => {
-  console.log(err);
-});
-let doc = new PropModel({
-  _id: new mongoose.Types.ObjectId(),
-  name: "Greate place to live",
-  owner: owner._id,
-  sleeps: 5,
-  bathrooms: 3,
-  bedrooms: 3,
-  type: "Cottage",
-  price: 350,
-  location: "San Jose"
-});
-doc.save(err => {
-  console.log(err);
-});
+// let owner = new UserModel({
+//   _id: new mongoose.Types.ObjectId(),
+//   email: "kailash@kailash.com",
+//   password: "admin",
+//   firstname: "Kailash",
+//   lastname: "Ramakrishnan",
+//   type: "Owner"
+// });
+// owner.save(err => {
+//   console.log(err);
+// });
+// let doc = new PropModel({
+//   _id: new mongoose.Types.ObjectId(),
+//   name: "Great place to live",
+//   owner: owner._id,
+//   sleeps: 5,
+//   bathrooms: 3,
+//   bedrooms: 3,
+//   type: "Cottage",
+//   price: 350,
+//   location: "San Jose"
+// });
+// doc.save(err => {
+//   console.log(err);
+// });
 
 app.set("view engine", "ejs");
-app.use(
-  session({
-    secret: "cmpe273_kafka_passport_mongo",
-    resave: false, // Forces the session to be saved back to the session store, even if the session was never modified during the request
-    saveUninitialized: false, // Force to save uninitialized session to db. A session is uninitialized when it is new but not modified.
-    duration: 60 * 60 * 1000, // Overall duration of Session : 30 minutes : 1800 seconds
-    activeDuration: 5 * 60 * 1000
-  })
-);
-app.use(bodyParser.json());
 
 //Multer
 const multer = require("multer");
@@ -94,27 +107,53 @@ app.use(function(req, res, next) {
 app.post("/Login", (req, res) => {
   console.log("Inside Login request");
   UserModel.findOne({ email: req.body.email })
+    .catch(err => {
+      throw err;
+    })
     .then(user => {
-      if (user && user.password == req.body.password) {
-        res.code = "200";
-        res.value = user;
-        res.cookie("user_cookie", "admin", {
-          maxAge: 900000,
-          httpOnly: false,
-          path: "/"
-        });
-        res.end(JSON.stringify(user));
-        console.log("Login succesful");
-      } else {
+      if (!user) {
         res.sendStatus(400).end();
-        console.log("Passwords don't match");
+        console.log("User doesn't exist!");
+      } else {
+        user.comparePassword(req.body.password, function(err, isMatch) {
+          if (isMatch && !err) {
+            var token = jwt.sign(user.toJSON(), config.secret, {
+              expiresIn: 10080 // in seconds
+            });
+            res.status(200).json({ success: true, token: "JWT " + token });
+          } else {
+            res.status(401).json({
+              success: false,
+              message: "Authentication failed. Passwords did not match."
+            });
+          }
+        });
       }
-    },
-    err => {
-      res.code = "400";
-      res.value =
-        "The email and password you entered did not match our records. Please double-check and try again.";
-      console.log(res.value);
+      //       res.code = "200";
+      //       res.value = user;
+      //       res.cookie("user_cookie", user._id, {
+      //         maxAge: 900000,
+      //         httpOnly: false,
+      //         path: "/"
+      //       });
+      //       req.session.userid = user._id;
+      //       res.end(JSON.stringify(user));
+      //       console.log("Login succesful", user._id);
+
+      //       console.log("Session id", req.session.userid);
+      //     } else {
+      //       res.sendStatus(400).end();
+      //       console.log("Passwords don't match");
+      //     }
+      //   },
+      //   err => {
+      //     res.code = "400";
+      //     res.value =
+      //       "The email and password you entered did not match our records. Please double-check and try again.";
+      //     console.log(res.value);
+      //   }
+      // );
+      // console.log("Session id", req.session.userid);
     });
 });
 
@@ -132,60 +171,93 @@ app.get("/Logout", (req, res) => {
   }
 });
 
-app.post("/Register", (request, response) => {
+app.post("/Register", (req, res) => {
   console.log("Inside Register request");
-  let User = new UserModel({
-    ...request.body,
-    _id: new mongoose.Types.ObjectId()
-  });
+  if (!req.body.email || !req.body.password) {
+    res
+      .status(400)
+      .json({ success: false, message: "Please enter username and password." });
+  } else {
+    let User = new UserModel({
+      ...req.body,
+      _id: new mongoose.Types.ObjectId()
+    });
+    User.save()
+      .then(user => {
+        console.log("User created : ", user);
+        res.status(200).send("User created successfuly!");
+      })
 
-  User.save().then(
-    user => {
-      console.log("User created : ", user);
-      response.sendStatus(200).end();
-    },
-    err => {
-      console.log("Error Creating User");
-      response.sendStatus(400).end();
-    }
-  );
+      .catch(err => {
+        console.log("Error creating property!", err);
+        res.sendStatus(400).end();
+      });
+  }
 });
 
-// app.post("/Owner", (req, res) => {
-//   console.log("Inside Owner POST request");
-//   let ownerId = req.session.userid;
-//   let name = req.body.details.headline;
-//   let sleeps = req.body.details.accomodates;
-//   let bathrooms = req.body.details.bathrooms;
-//   let bedrooms = req.body.details.bedrooms;
-//   let type = req.body.details.type;
-//   let price = req.body.price;
-//   let location = req.body.location;
-//   let sql =
-//     "INSERT INTO property (`propertyid`,`ownerid`,`name`, `sleeps`, `bathrooms`, `bedrooms`,`type`,`price`,`location`) VALUES (NULL,?,?,?,?,?,?,?,'san jose')";
-//   pool.query(
-//     sql,
-//     [ownerId, name, sleeps, bathrooms, bedrooms, type, price],
-//     (err, result) => {
-//       if (err) {
-//         console.log("Unable post property");
-//         throw err;
-//         res.writeHead(400, {
-//           "Content-Type": "text/plain"
-//         });
-//         res.end("Unable to create property");
-//       } else {
-//         console.log("Property created successful", result);
-//         res.writeHead(200, {
-//           "Content-Type": "application/json"
-//         });
-//         res.end(JSON.stringify(result));
-//       }
+app.post(
+  "/Owner",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    console.log("Inside Owner POST request! User id is :", req.user._id);
+    let name = req.body.details.headline;
+    let sleeps = req.body.details.accomodates;
+    let bathrooms = req.body.details.bathrooms;
+    let bedrooms = req.body.details.bedrooms;
+    let type = req.body.details.type;
+    let price = req.body.price;
+    let location = req.body.location;
+    console.log("Session id", req.session.userid);
+    console.log("Request body", req.body);
+
+    let Property = new PropModel({
+      _id: new mongoose.Types.ObjectId(),
+      name: name,
+      owner: mongoose.Types.ObjectId(req.session.userid),
+      sleeps: sleeps,
+      bathrooms: bathrooms,
+      bedrooms: bedrooms,
+      type: type,
+      price: price,
+      location: location
+    });
+
+    Property.save()
+      .then(property => {
+        console.log("Property created : ", property);
+        res.sendStatus(200).end();
+      })
+      .catch(err => {
+        console.log("Error creating property!", err);
+        res.sendStatus(400).end();
+      });
+  }
+);
+
+// let sql =
+//   "INSERT INTO property (`propertyid`,`ownerid`,`name`, `sleeps`, `bathrooms`, `bedrooms`,`type`,`price`,`location`) VALUES (NULL,?,?,?,?,?,?,?,'san jose')";
+// pool.query(
+//   sql,
+//   [ownerId, name, sleeps, bathrooms, bedrooms, type, price],
+//   (err, result) => {
+//     if (err) {
+//       console.log("Unable post property");
+//       throw err;
+//       res.writeHead(400, {
+//         "Content-Type": "text/plain"
+//       });
+//       res.end("Unable to create property");
+//     } else {
+//       console.log("Property created successful", result);
+//       res.writeHead(200, {
+//         "Content-Type": "application/json"
+//       });
+//       res.end(JSON.stringify(result));
 //     }
-//   );
+//   }
+// );
 // });
 
-// app.post("/UpdateUser", (req, res) => {
 //   console.log("Inside Update User", req.body);
 //   let firstName = req.body.firstname;
 //   let lastName = req.body.lastname;
@@ -210,8 +282,11 @@ app.post("/Register", (request, response) => {
 //   });
 // });
 
-app.get("/Home", (req, res) => {
-  console.log(req.query);
+app.post("/Home", (req, res) => {
+  console.log("Inside Home");
+  console.log(req.body.location);
+
+  console.log("Session :", req.session);
 
   PropModel.find({ location: req.query.location })
 
