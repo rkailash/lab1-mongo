@@ -25,6 +25,7 @@ class OwnerLogin extends Component {
     this.props.handleChange(e);
   };
   handleSubmit = e => {
+    console.log("Button clicked!");
     e.preventDefault();
     this.props.handleSubmit({ ...this.props.account, type: "owner" });
   };
@@ -34,7 +35,7 @@ class OwnerLogin extends Component {
   */
     if (this.state.signUpFlag === true)
       return <Redirect to="/Register:owner" />;
-    else if (authFlag && cookie.load("user_cookie")) {
+    else if (authFlag) {
       return <Redirect to="/Owner" />;
     } else {
       return (

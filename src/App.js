@@ -42,6 +42,15 @@ class App extends Component {
             )}
           />
           <Route
+            path="/Home"
+            render={() => (
+              <Home
+                userInfo={userInfo}
+                saveSearchQuery={searchQuery => this.setState({ searchQuery })}
+              />
+            )}
+          />
+          <Route
             path="/TravellerLogin"
             render={props => (
               <Login

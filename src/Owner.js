@@ -39,7 +39,7 @@ class Owner extends Component {
   componentDidMount() {
     const data = {
       details: {
-        headline: "Great place",
+        headline: "Great place to live",
         accomodates: 3,
         bathrooms: 3,
         bedrooms: 4,

@@ -28,8 +28,8 @@ class Login extends Component {
     const { title, account, authFlag, showLoginError } = this.props;
     if (this.state.signUpFlag) return <Redirect to="/Register:traveler" />;
     //if (authFlag && cookie.load("user_cookie")) {
-    if (authFlag) {
-      return <Redirect to="/" />;
+    if (authFlag && cookie.load("jwt")) {
+      return <Redirect to="/Home" />;
     } else {
       return (
         <div className="login">

@@ -8,6 +8,10 @@ const passport = require("passport");
 const config = require("./config/settings");
 const morgan = require("morgan");
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
+
+require("./config/passport")(passport);
+// const requireAuth = passport.authenticate("jwt", { session: false });
 
 var serveStatic = require("serve-static");
 
@@ -38,7 +42,7 @@ let db = mongoose.connection;
 db.on("error", console.error.bind(console, "MongoDB connection error:"));
 
 //Models
-const UserModel = require("./models/User");
+const UserModel = require("./models/user");
 const PropModel = require("./models/property");
 
 // let owner = new UserModel({
@@ -104,57 +108,37 @@ app.use(function(req, res, next) {
   next();
 });
 
-app.post("/Login", (req, res) => {
-  console.log("Inside Login request");
-  UserModel.findOne({ email: req.body.email })
-    .catch(err => {
-      throw err;
-    })
-    .then(user => {
-      if (!user) {
-        res.sendStatus(400).end();
-        console.log("User doesn't exist!");
-      } else {
-        user.comparePassword(req.body.password, function(err, isMatch) {
-          if (isMatch && !err) {
-            var token = jwt.sign(user.toJSON(), config.secret, {
-              expiresIn: 10080 // in seconds
-            });
-            res.status(200).json({ success: true, token: "JWT " + token });
-          } else {
-            res.status(401).json({
-              success: false,
-              message: "Authentication failed. Passwords did not match."
-            });
-          }
-        });
-      }
-      //       res.code = "200";
-      //       res.value = user;
-      //       res.cookie("user_cookie", user._id, {
-      //         maxAge: 900000,
-      //         httpOnly: false,
-      //         path: "/"
-      //       });
-      //       req.session.userid = user._id;
-      //       res.end(JSON.stringify(user));
-      //       console.log("Login succesful", user._id);
+app.post("/Login", (req, res, next) => {
+  console.log("Inside Login route");
+  passport.authenticate("local", { session: false }, (error, user) => {
+    if (error || !user) {
+      res.status(400).json({ error });
+    }
+    console.log("Response from authenticate", user);
+    /** This is what ends up in our JWT */
+    const payload = {
+      username: user.email,
+      userid: user._id,
+      expires: Date.now() + parseInt(process.env.JWT_EXPIRATION_MS)
+    };
 
-      //       console.log("Session id", req.session.userid);
-      //     } else {
-      //       res.sendStatus(400).end();
-      //       console.log("Passwords don't match");
-      //     }
-      //   },
-      //   err => {
-      //     res.code = "400";
-      //     res.value =
-      //       "The email and password you entered did not match our records. Please double-check and try again.";
-      //     console.log(res.value);
-      //   }
-      // );
-      // console.log("Session id", req.session.userid);
+    /** assigns payload to req.user */
+    req.login(payload, { session: false }, error => {
+      if (error) {
+        res.status(400).send({ error });
+      }
+
+      /** generate a signed json web token and return it in the response */
+      const token = jwt.sign(JSON.stringify(payload), config.secret);
+
+      /** assign our jwt to the cookie */
+      res.cookie("jwt", token, {
+        expires: new Date(Date.now() + 900000),
+        httpOnly: true
+      });
+      res.status(200).json({ user });
     });
+  })(req, res, next);
 });
 
 app.get("/Logout", (req, res) => {
@@ -172,34 +156,41 @@ app.get("/Logout", (req, res) => {
 });
 
 app.post("/Register", (req, res) => {
-  console.log("Inside Register request");
-  if (!req.body.email || !req.body.password) {
-    res
-      .status(400)
-      .json({ success: false, message: "Please enter username and password." });
-  } else {
-    let User = new UserModel({
-      ...req.body,
-      _id: new mongoose.Types.ObjectId()
+  console.log("Inside Register Request", UserModel);
+  const { email, password, firstname, lastname, type } = req.body;
+  const saltRounds = 10;
+  bcrypt.hash(password, saltRounds, (err, hash) => {
+    if (err) throw err;
+
+    let userDocument = new UserModel({
+      _id: new mongoose.Types.ObjectId(),
+      email: email,
+      password: hash,
+      firstname: firstname,
+      lastname: lastname,
+      type: type
     });
-    User.save()
+
+    userDocument
+      .save()
       .then(user => {
         console.log("User created : ", user);
-        res.status(200).send("User created successfuly!");
+        res.status(200).json({ ...user });
       })
 
       .catch(err => {
         console.log("Error creating property!", err);
         res.sendStatus(400).end();
       });
-  }
+  });
 });
 
 app.post(
   "/Owner",
   passport.authenticate("jwt", { session: false }),
   (req, res) => {
-    console.log("Inside Owner POST request! User id is :", req.user._id);
+    console.log(req.user.userid);
+    console.log("Inside Owner POST request! User id is :", req.user.username);
     let name = req.body.details.headline;
     let sleeps = req.body.details.accomodates;
     let bathrooms = req.body.details.bathrooms;
@@ -207,13 +198,12 @@ app.post(
     let type = req.body.details.type;
     let price = req.body.price;
     let location = req.body.location;
-    console.log("Session id", req.session.userid);
     console.log("Request body", req.body);
 
     let Property = new PropModel({
       _id: new mongoose.Types.ObjectId(),
       name: name,
-      owner: mongoose.Types.ObjectId(req.session.userid),
+      owner: mongoose.Types.ObjectId(req.user.userid),
       sleeps: sleeps,
       bathrooms: bathrooms,
       bedrooms: bedrooms,
@@ -225,7 +215,7 @@ app.post(
     Property.save()
       .then(property => {
         console.log("Property created : ", property);
-        res.sendStatus(200).end();
+        res.sendStatus(200).json({ ...property });
       })
       .catch(err => {
         console.log("Error creating property!", err);
@@ -233,6 +223,199 @@ app.post(
       });
   }
 );
+
+app.get(
+  "/Home",
+  // passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    console.log("Inside Home");
+    // console.log("Logged in user", req.user.username);
+    console.log(req.query.location);
+
+    PropModel.find({ location: req.query.location })
+
+      .then(properties => {
+        res.code = "200";
+        res.status(200).json({ ...properties });
+      })
+
+      .catch(error => {
+        res.code = "400";
+        res.send = error;
+      });
+  }
+);
+
+app.get("/PropertyList", (req, res) => {
+  console.log("Inside Property Results Page");
+  let location = req.query.location;
+  let startdate = req.query.startdate;
+  let enddate = req.query.enddate;
+  console.log("Request body:", location);
+  PropModel.find({ location: location })
+
+    .then(properties => {
+      res.code = "200";
+      res.status(200).json({ ...properties });
+    })
+
+    .catch(error => {
+      res.code = "400";
+      res.send = error;
+    });
+});
+
+app.get("/Property/:id", (req, res) => {
+  let propertyId = req.params.id;
+  console.log("Inside Property Page of ID:", propertyId);
+  PropModel.findById(propertyId)
+
+    .then(properties => {
+      res.code = "200";
+      res.status(200).json({ properties });
+    })
+
+    .catch(error => {
+      res.code = "400";
+      res.send = error;
+    });
+});
+
+// let sql = "SELECT * from `property` where `propertyid`= ?";
+// pool.query(sql, [propertyId], (err, result) => {
+//   if (err) {
+//     throw err;
+//     res.writeHead(400, {
+//       "Content-Type": "text/plain"
+//     });
+//     res.end("No search results returned");
+//   } else {
+//     res.writeHead(200, {
+//       "Content-Type": "application/json"
+//     });
+//     res.end(JSON.stringify(result));
+//     console.log("Result is:", result);
+//   }
+// });
+
+app.use(serveStatic(path.join(__dirname, "images")));
+app.listen(3001, () => {
+  console.log("Server Listening on port 3001");
+});
+
+// console.log("Inside Login request");
+// UserModel.findOne({ email: req.body.email })
+//   .catch(err => {
+//     throw err;
+//   })
+//   .then(user => {
+//     if (!user) {
+//       res.sendStatus(400).end();
+//       console.log("User doesn't exist!");
+//     } else {
+//       user.comparePassword(req.body.password, function(err, isMatch) {
+//         if (isMatch && !err) {
+//           var token = jwt.sign(user.toJSON(), config.secret, {
+//             expiresIn: 10080 // in seconds
+//           });
+//           res.status(200).json({ success: true, token: "JWT " + token });
+//         } else {
+//           res.status(401).json({
+//             success: false,
+//             message: "Authentication failed. Passwords did not match."
+//           });
+//         }
+//       });
+//     }
+//   });
+
+//       res.code = "200";
+//       res.value = user;
+//       res.cookie("user_cookie", user._id, {
+//         maxAge: 900000,
+//         httpOnly: false,
+//         path: "/"
+//       });
+//       req.session.userid = user._id;
+//       res.end(JSON.stringify(user));
+//       console.log("Login succesful", user._id);
+
+//       console.log("Session id", req.session.userid);
+//     } else {
+//       res.sendStatus(400).end();
+//       console.log("Passwords don't match");
+//     }
+//   },
+//   err => {
+//     res.code = "400";
+//     res.value =
+//       "The email and password you entered did not match our records. Please double-check and try again.";
+//     console.log(res.value);
+//   }
+// );
+// console.log("Session id", req.session.userid);
+//     });
+// });
+
+// app.post("/Register", (req, res) => {
+//   console.log("Inside Register request");
+//   if (!req.body.email || !req.body.password) {
+//     res
+//       .status(400)
+//       .json({ success: false, message: "Please enter username and password." });
+//   } else if {
+
+//   }
+//     let User = new UserModel({
+//       ...req.body,
+//       _id: new mongoose.Types.ObjectId()
+//     });
+//     User.save()
+//       .then(user => {
+//         console.log("User created : ", user);
+//         res.status(200).send("User created successfuly!");
+//       })
+
+//       .catch(err => {
+//         console.log("Error creating property!", err);
+//         res.sendStatus(400).end();
+//       });
+//   }
+// });
+
+// app.post("/Owner", requireAuth, (req, res) => {
+//   console.log("Inside Owner POST request! User id is :", req.user._id);
+//   let name = req.body.details.headline;
+//   let sleeps = req.body.details.accomodates;
+//   let bathrooms = req.body.details.bathrooms;
+//   let bedrooms = req.body.details.bedrooms;
+//   let type = req.body.details.type;
+//   let price = req.body.price;
+//   let location = req.body.location;
+//   console.log("Request body", req.body);
+
+//   let Property = new PropModel({
+//     _id: new mongoose.Types.ObjectId(),
+//     name: name,
+//     owner: mongoose.Types.ObjectId(req.user._id),
+//     sleeps: sleeps,
+//     bathrooms: bathrooms,
+//     bedrooms: bedrooms,
+//     type: type,
+//     price: price,
+//     location: location
+//   });
+
+//   Property.save()
+//     .then(property => {
+//       console.log("Property created : ", property);
+//       res.sendStatus(200).end();
+//     })
+//     .catch(err => {
+//       console.log("Error creating property!", err);
+//       res.sendStatus(400).end();
+//     });
+// });
 
 // let sql =
 //   "INSERT INTO property (`propertyid`,`ownerid`,`name`, `sleeps`, `bathrooms`, `bedrooms`,`type`,`price`,`location`) VALUES (NULL,?,?,?,?,?,?,?,'san jose')";
@@ -282,31 +465,6 @@ app.post(
 //   });
 // });
 
-app.post("/Home", (req, res) => {
-  console.log("Inside Home");
-  console.log(req.body.location);
-
-  console.log("Session :", req.session);
-
-  PropModel.find({ location: req.query.location })
-
-    .then(properties => {
-      res.code = "200";
-      res.send({ properties });
-    })
-
-    .catch(error => {
-      res.code = "400";
-      res.send = error;
-    });
-});
-
-// app.get("/PropertyList", (req, res) => {
-//   console.log("Inside Property Results Page");
-//   let location = req.query.location;
-//   let startdate = req.query.startDate;
-//   let enddate = req.query.endDate;
-//   console.log("Request body:", location);
 //   let sql = "SELECT * FROM `property` WHERE `location` = ?";
 //   pool.query(sql, [location], (err, result) => {
 //     console.log("SQL query", sql);
@@ -322,27 +480,6 @@ app.post("/Home", (req, res) => {
 //       });
 //       res.end(JSON.stringify(result));
 //       console.log("Result:", result);
-//     }
-//   });
-// });
-
-// app.get("/Property/:id", (req, res) => {
-//   let propertyId = req.params.id;
-//   console.log("Inside Property Page of ID:", propertyId);
-//   let sql = "SELECT * from `property` where `propertyid`= ?";
-//   pool.query(sql, [propertyId], (err, result) => {
-//     if (err) {
-//       throw err;
-//       res.writeHead(400, {
-//         "Content-Type": "text/plain"
-//       });
-//       res.end("No search results returned");
-//     } else {
-//       res.writeHead(200, {
-//         "Content-Type": "application/json"
-//       });
-//       res.end(JSON.stringify(result));
-//       console.log("Result is:", result);
 //     }
 //   });
 // });
@@ -450,9 +587,5 @@ app.post("/Home", (req, res) => {
 // });
 
 //start your server on port 3001
-app.use(serveStatic(path.join(__dirname, "images")));
-app.listen(3001, () => {
-  console.log("Server Listening on port 3001");
-});
 
 // ("SELECT property.*,booking.startdate,booking.enddate FROM property LEFT JOIN booking ON property.propertyid=booking.propertyid WHERE booking.ownerid=?")
