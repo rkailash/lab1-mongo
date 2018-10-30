@@ -3,8 +3,9 @@ const Schema = mongoose.Schema;
 
 const BookingSchema = Schema({
   _id: Schema.Types.ObjectId,
-  property: { type: Schema.Types.ObjectId, ref: "Property" },
-  user: { type: Schema.Types.ObjectId, ref: "User" },
+  property: Schema.Types.ObjectId,
+  user: Schema.Types.ObjectId,
+  owner: { type: Schema.Types.ObjectId, ref: "Property" },
   startdate: Date,
   enddate: Date
 });

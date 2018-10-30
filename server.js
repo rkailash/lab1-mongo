@@ -2,14 +2,15 @@ const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
-const cors = require("cors");
+const kafka = require("./kafka/client");
 const path = require("path");
 const passport = require("passport");
 const config = require("./config/settings");
 const morgan = require("morgan");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
-
+const cors = require("cors");
+app.use(cors({ origin: "http://localhost:8080", credentials: true }));
 require("./config/passport")(passport);
 // const requireAuth = passport.authenticate("jwt", { session: false });
 
@@ -36,7 +37,6 @@ app.use(passport.initialize());
 const mongoose = require("mongoose");
 const mongoDB = "mongodb://kailashr:passw0rd1@ds237855.mlab.com:37855/homeaway";
 mongoose.connect(mongoDB);
-mongoose.Promise = global.Promise;
 let db = mongoose.connection;
 //Bind connection to error event to get notified for connection errors
 db.on("error", console.error.bind(console, "MongoDB connection error:"));
@@ -44,6 +44,7 @@ db.on("error", console.error.bind(console, "MongoDB connection error:"));
 //Models
 const UserModel = require("./models/user");
 const PropModel = require("./models/property");
+const BookModel = require("./models/booking");
 
 // let owner = new UserModel({
 //   _id: new mongoose.Types.ObjectId(),
@@ -73,25 +74,6 @@ const PropModel = require("./models/property");
 
 app.set("view engine", "ejs");
 
-//Multer
-const multer = require("multer");
-const uuidv4 = require("uuid/v4");
-const fs = require("fs");
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const folderName = "./uploads";
-    cb(null, folderName);
-  },
-  filename: (req, file, cb) => {
-    const newFilename = `${req.session.userid}-${
-      file.originalname
-    }${path.extname(file.originalname)}`;
-    console.log("file extension");
-    cb(null, newFilename);
-  }
-});
-const upload = multer({ storage });
-
 //Allow Access Control
 app.use(function(req, res, next) {
   res.setHeader("Access-Control-Allow-Origin", "http://localhost:8080");
@@ -112,12 +94,13 @@ app.post("/Login", (req, res, next) => {
   console.log("Inside Login route");
   passport.authenticate("local", { session: false }, (error, user) => {
     if (error || !user) {
+      console.log(error);
       res.status(400).json({ error });
     }
     console.log("Response from authenticate", user);
     /** This is what ends up in our JWT */
     const payload = {
-      username: user.email,
+      email: user.email,
       userid: user._id,
       expires: Date.now() + parseInt(process.env.JWT_EXPIRATION_MS)
     };
@@ -125,6 +108,7 @@ app.post("/Login", (req, res, next) => {
     /** assigns payload to req.user */
     req.login(payload, { session: false }, error => {
       if (error) {
+        console.log(error);
         res.status(400).send({ error });
       }
 
@@ -136,7 +120,7 @@ app.post("/Login", (req, res, next) => {
         expires: new Date(Date.now() + 900000),
         httpOnly: true
       });
-      res.status(200).json({ user });
+      res.end();
     });
   })(req, res, next);
 });
@@ -156,60 +140,61 @@ app.get("/Logout", (req, res) => {
 });
 
 app.post("/Register", (req, res) => {
-  console.log("Inside Register Request", UserModel);
-  const { email, password, firstname, lastname, type } = req.body;
-  const saltRounds = 10;
-  bcrypt.hash(password, saltRounds, (err, hash) => {
-    if (err) throw err;
+  kafka.make_request("create_user", req.body, function(err, results) {
+    console.log("Inside Register Request");
 
-    let userDocument = new UserModel({
-      _id: new mongoose.Types.ObjectId(),
-      email: email,
-      password: hash,
-      firstname: firstname,
-      lastname: lastname,
-      type: type
-    });
-
-    userDocument
-      .save()
-      .then(user => {
-        console.log("User created : ", user);
-        res.status(200).json({ ...user });
-      })
-
-      .catch(err => {
-        console.log("Error creating property!", err);
-        res.sendStatus(400).end();
-      });
+    if (err) {
+      console.log("Error creating property!", err);
+      res.sendStatus(400).end();
+    } else {
+      console.log("User created : ", results);
+      res.status(200).json({ results });
+    }
   });
 });
+
+// app.post("/Register", (req, res) => {
+//   const saltRounds = 10;
+//   const { email, password, firstname, lastname, type } = req.body;
+//   bcrypt.hash(password, saltRounds, (err, hash) => {
+//     if (err) throw err;
+
+//     let userDocument = new UserModel({
+//       _id: new mongoose.Types.ObjectId(),
+//       email: email,
+//       password: hash,
+//       firstname: firstname,
+//       lastname: lastname,
+//       type: type
+//     });
 
 app.post(
   "/Owner",
   passport.authenticate("jwt", { session: false }),
   (req, res) => {
     console.log(req.user.userid);
-    console.log("Inside Owner POST request! User id is :", req.user.username);
-    let name = req.body.details.headline;
-    let sleeps = req.body.details.accomodates;
-    let bathrooms = req.body.details.bathrooms;
-    let bedrooms = req.body.details.bedrooms;
-    let type = req.body.details.type;
-    let price = req.body.price;
-    let location = req.body.location;
+    console.log("Inside Owner POST request! User id is :", req.user.email);
+    let { headline, accomodates, bathrooms, bedrooms, type } = req.body.details;
+    let { price, location } = req.body;
+    let Name = headline;
+    let Sleeps = accomodates;
+    let Bathrooms = bathrooms;
+    let Bedrooms = bedrooms;
+    let Type = type;
+    let Price = price;
+    let Location = location;
     console.log("Request body", req.body);
 
     let Property = new PropModel({
       _id: new mongoose.Types.ObjectId(),
-      name: name,
+      name: Name,
       owner: mongoose.Types.ObjectId(req.user.userid),
-      sleeps: sleeps,
-      bathrooms: bathrooms,
-      bedrooms: bedrooms,
-      type: type,
-      price: price,
-      location: location
+      sleeps: Sleeps,
+      bathrooms: Bathrooms,
+      bedrooms: Bedrooms,
+      type: Type,
+      price: Price,
+      location: Location
     });
 
     Property.save()
@@ -226,7 +211,7 @@ app.post(
 
 app.get(
   "/Home",
-  // passport.authenticate("jwt", { session: false }),
+  passport.authenticate("jwt", { session: false }),
   (req, res) => {
     console.log("Inside Home");
     // console.log("Logged in user", req.user.username);
@@ -248,9 +233,10 @@ app.get(
 
 app.get("/PropertyList", (req, res) => {
   console.log("Inside Property Results Page");
-  let location = req.query.location;
-  let startdate = req.query.startdate;
-  let enddate = req.query.enddate;
+  const { location, startdate, enddate } = req.query;
+  let Location = location;
+  let StartDate = startdate;
+  let EndDate = enddate;
   console.log("Request body:", location);
   PropModel.find({ location: location })
 
@@ -281,20 +267,78 @@ app.get("/Property/:id", (req, res) => {
     });
 });
 
-// let sql = "SELECT * from `property` where `propertyid`= ?";
-// pool.query(sql, [propertyId], (err, result) => {
+app.get("/Trips", (req, res) => {
+  //let sql =
+  "SELECT property.*,booking.startdate,booking.enddate FROM property LEFT JOIN booking ON property.propertyid=booking.propertyid WHERE booking.userid=?";
+  //let sql =
+  //"SELECT property.*,booking.startdate,booking.enddate FROM property LEFT JOIN booking ON property.propertyid=booking.propertyid WHERE booking.userid=?";
+
+  PropModel.find({})
+    .catch(err => {
+      throw err;
+    })
+    .then(users => {
+      console.log(users);
+    });
+});
+
+app.get("/OwnerDash", (req, res) => {
+  let ownerId = req.session.userid;
+  let sql = "SELECT * FROM `property` WHERE ownerid = ?";
+  console.log("Fetching Owner Dashboard of Owner ID", ownerId);
+  pool.query(sql, [ownerId], (err, result) => {
+    if (err) {
+      throw err;
+      res.writeHead(400, {
+        "Content-Type": "text/plain"
+      });
+      res.end("No search results returned");
+    } else {
+      res.writeHead(200, {
+        "Content-Type": "application/json"
+      });
+      console.log("Result is ", result);
+      res.end(JSON.stringify(result));
+    }
+  });
+});
+
+app.post(
+  "/Booking",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    console.log("Inside booking:", req.body);
+    let { startdate, enddate, propertyid } = req.body;
+    let { email, userid } = req.user;
+    console.log("Booking made by ", email, " USER ID: ", userid);
+  }
+);
+// let sql1 = "SELECT ownerid FROM property WHERE propertyid =?";
+// let sql2 =
+//   "INSERT INTO booking (`bookingid`,`propertyid`,`userid`,`ownerid`,`startdate`, `enddate`) VALUES (NULL,?,?,?,?,?)";
+// let sql3 = "UPDATE property SET bookedflag=1 WHERE propertyid=?";
+// pool.query(sql1, [propertyId], (err, result) => {
 //   if (err) {
 //     throw err;
-//     res.writeHead(400, {
-//       "Content-Type": "text/plain"
-//     });
-//     res.end("No search results returned");
 //   } else {
-//     res.writeHead(200, {
-//       "Content-Type": "application/json"
-//     });
-//     res.end(JSON.stringify(result));
-//     console.log("Result is:", result);
+//     console.log(result[0].ownerid);
+//     let OWNERID = result[0].ownerid;
+//     pool.query(
+//       sql2,
+//       [propertyId, userId, OWNERID, startDate, endDate],
+//       (err, result1) => {
+//         if (err) throw err;
+//         else {
+//           console.log("Booking Successful", result1);
+//           pool.query(sql3, [propertyId], (err, result2) => {
+//             if (err) throw err;
+//             else {
+//               res.end("Bookng Successful");
+//             }
+//           });
+//         }
+//       }
+//     );
 //   }
 // });
 
@@ -589,3 +633,21 @@ app.listen(3001, () => {
 //start your server on port 3001
 
 // ("SELECT property.*,booking.startdate,booking.enddate FROM property LEFT JOIN booking ON property.propertyid=booking.propertyid WHERE booking.ownerid=?")
+//Multer
+// const multer = require("multer");
+// const uuidv4 = require("uuid/v4");
+// const fs = require("fs");
+// const storage = multer.diskStorage({
+//   destination: (req, file, cb) => {
+//     const folderName = "./uploads";
+//     cb(null, folderName);
+//   },
+//   filename: (req, file, cb) => {
+//     const newFilename = `${req.session.userid}-${
+//       file.originalname
+//     }${path.extname(file.originalname)}`;
+//     console.log("file extension");
+//     cb(null, newFilename);
+//   }
+// });
+// const upload = multer({ storage });

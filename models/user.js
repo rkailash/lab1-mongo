@@ -1,9 +1,8 @@
-const mongoose = require("mongoose");
-const validator = require("validator");
-const bcrypt = require("bcrypt");
-const Schema = mongoose.Schema;
+let mongoose = require("mongoose");
+let validator = require("validator");
+let Schema = mongoose.Schema;
 
-const UserSchema = Schema({
+let UserSchema = Schema({
   _id: Schema.Types.ObjectId,
   email: {
     type: String,

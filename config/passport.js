@@ -30,6 +30,9 @@ const passportJWT = require("passport-jwt");
 const JWTStrategy = passportJWT.Strategy;
 const bcrypt = require("bcrypt");
 const config = require("./settings");
+const mongoose = require("mongoose");
+const mongoDB = "mongodb://kailashr:passw0rd1@ds237855.mlab.com:37855/homeaway";
+mongoose.connect(mongoDB);
 const UserModel = require("../models/user");
 
 module.exports = function(passport) {
