@@ -18,7 +18,8 @@ const PropSchema = Schema({
   location: {
     type: String,
     lowercase: true
-  }
+  },
+  photos: Array
 });
 
 module.exports = mongoose.model("Property", PropSchema);

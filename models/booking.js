@@ -5,9 +5,11 @@ const BookingSchema = Schema({
   _id: Schema.Types.ObjectId,
   property: Schema.Types.ObjectId,
   user: Schema.Types.ObjectId,
-  owner: { type: Schema.Types.ObjectId, ref: "Property" },
+  owner: Schema.Types.ObjectId,
   startdate: Date,
   enddate: Date
 });
+
+BookingSchema.pre("save", function(next) {});
 
 module.exports = mongoose.model("Booking", BookingSchema);

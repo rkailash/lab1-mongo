@@ -1,76 +1,37 @@
+//Express
 const express = require("express");
 const app = express();
-const bodyParser = require("body-parser");
-const cookieParser = require("cookie-parser");
-const kafka = require("./kafka/client");
-const path = require("path");
+
+//Passport
 const passport = require("passport");
-const config = require("./config/settings");
-const morgan = require("morgan");
 const jwt = require("jsonwebtoken");
-const bcrypt = require("bcrypt");
-const cors = require("cors");
-app.use(cors({ origin: "http://localhost:8080", credentials: true }));
+const config = require("./config/settings");
 require("./config/passport")(passport);
-// const requireAuth = passport.authenticate("jwt", { session: false });
-
-var serveStatic = require("serve-static");
-
-app.use(bodyParser.urlencoded({ extended: true }));
-
-// app.use(
-//   session({
-//     secret: "kailash",
-//     resave: false, // Forces the session to be saved back to the session store, even if the session was never modified during the request
-//     saveUninitialized: false, // Force to save uninitialized session to db. A session is uninitialized when it is new but not modified.
-//     duration: 60 * 60 * 1000, // Overall duration of Session : 30 minutes : 1800 seconds
-//     activeDuration: 5 * 60 * 1000
-//   })
-// );
-app.use(bodyParser.json());
-app.use(cookieParser("kailash"));
-
-app.use(morgan("dev"));
 app.use(passport.initialize());
 
-//MongoDB connection
-const mongoose = require("mongoose");
-const mongoDB = "mongodb://kailashr:passw0rd1@ds237855.mlab.com:37855/homeaway";
-mongoose.connect(mongoDB);
-let db = mongoose.connection;
-//Bind connection to error event to get notified for connection errors
-db.on("error", console.error.bind(console, "MongoDB connection error:"));
+//Express Routes
+const Register_Route = require("./routes/register");
+const Owner_Route = require("./routes/owner-post");
+const Home_Route = require("./routes/home");
+const List_Route = require("./routes/property-list");
+const Property_Route = require("./routes/property-details");
+const TravelerDash_Route = require("./routes/traveler-dashboard");
+const OwnerDash_Route = require("./routes/owner-dashboard");
+const Booking_Route = require("./routes/booking");
+const Photo_Route = require("./routes/photo");
 
-//Models
-const UserModel = require("./models/user");
-const PropModel = require("./models/property");
-const BookModel = require("./models/booking");
+//Body parser
+const bodyParser = require("body-parser");
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
-// let owner = new UserModel({
-//   _id: new mongoose.Types.ObjectId(),
-//   email: "kailash@kailash.com",
-//   password: "admin",
-//   firstname: "Kailash",
-//   lastname: "Ramakrishnan",
-//   type: "Owner"
-// });
-// owner.save(err => {
-//   console.log(err);
-// });
-// let doc = new PropModel({
-//   _id: new mongoose.Types.ObjectId(),
-//   name: "Great place to live",
-//   owner: owner._id,
-//   sleeps: 5,
-//   bathrooms: 3,
-//   bedrooms: 3,
-//   type: "Cottage",
-//   price: 350,
-//   location: "San Jose"
-// });
-// doc.save(err => {
-//   console.log(err);
-// });
+//morgan
+const morgan = require("morgan");
+app.use(morgan("dev"));
+
+//Cors
+const cors = require("cors");
+app.use(cors({ origin: "http://localhost:8080", credentials: true }));
 
 app.set("view engine", "ejs");
 
@@ -90,6 +51,7 @@ app.use(function(req, res, next) {
   next();
 });
 
+//Login Route (needs to be moved to express route)
 app.post("/Login", (req, res, next) => {
   console.log("Inside Login route");
   passport.authenticate("local", { session: false }, (error, user) => {
@@ -125,228 +87,47 @@ app.post("/Login", (req, res, next) => {
   })(req, res, next);
 });
 
-app.get("/Logout", (req, res) => {
-  console.log("Inside logout request");
-  if (req.session) {
-    req.session.destroy(function(err) {
-      if (err) {
-        return res.end();
-      } else {
-        console.log("User logged out!");
-        return res.end();
-      }
-    });
-  }
-});
+//Other Express Routes
+app.use("/Register", Register_Route);
+app.use("/Owner", Owner_Route);
+app.use("/Home", Home_Route);
+app.use("/PropertyList", List_Route);
+app.use("/Property/:id", Property_Route);
+app.use("/TravelerDash", TravelerDash_Route);
+app.use("/OwnerDash", OwnerDash_Route);
+app.use("/Booking", Booking_Route);
+app.use("/Photo", Photo_Route);
 
-app.post("/Register", (req, res) => {
-  kafka.make_request("create_user", req.body, function(err, results) {
-    console.log("Inside Register Request");
-
-    if (err) {
-      console.log("Error creating property!", err);
-      res.sendStatus(400).end();
-    } else {
-      console.log("User created : ", results);
-      res.status(200).json({ results });
-    }
-  });
-});
-
-// app.post("/Register", (req, res) => {
-//   const saltRounds = 10;
-//   const { email, password, firstname, lastname, type } = req.body;
-//   bcrypt.hash(password, saltRounds, (err, hash) => {
-//     if (err) throw err;
-
-//     let userDocument = new UserModel({
-//       _id: new mongoose.Types.ObjectId(),
-//       email: email,
-//       password: hash,
-//       firstname: firstname,
-//       lastname: lastname,
-//       type: type
-//     });
-
-app.post(
-  "/Owner",
-  passport.authenticate("jwt", { session: false }),
-  (req, res) => {
-    console.log(req.user.userid);
-    console.log("Inside Owner POST request! User id is :", req.user.email);
-    let { headline, accomodates, bathrooms, bedrooms, type } = req.body.details;
-    let { price, location } = req.body;
-    let Name = headline;
-    let Sleeps = accomodates;
-    let Bathrooms = bathrooms;
-    let Bedrooms = bedrooms;
-    let Type = type;
-    let Price = price;
-    let Location = location;
-    console.log("Request body", req.body);
-
-    let Property = new PropModel({
-      _id: new mongoose.Types.ObjectId(),
-      name: Name,
-      owner: mongoose.Types.ObjectId(req.user.userid),
-      sleeps: Sleeps,
-      bathrooms: Bathrooms,
-      bedrooms: Bedrooms,
-      type: Type,
-      price: Price,
-      location: Location
-    });
-
-    Property.save()
-      .then(property => {
-        console.log("Property created : ", property);
-        res.sendStatus(200).json({ ...property });
-      })
-      .catch(err => {
-        console.log("Error creating property!", err);
-        res.sendStatus(400).end();
-      });
-  }
-);
-
-app.get(
-  "/Home",
-  passport.authenticate("jwt", { session: false }),
-  (req, res) => {
-    console.log("Inside Home");
-    // console.log("Logged in user", req.user.username);
-    console.log(req.query.location);
-
-    PropModel.find({ location: req.query.location })
-
-      .then(properties => {
-        res.code = "200";
-        res.status(200).json({ ...properties });
-      })
-
-      .catch(error => {
-        res.code = "400";
-        res.send = error;
-      });
-  }
-);
-
-app.get("/PropertyList", (req, res) => {
-  console.log("Inside Property Results Page");
-  const { location, startdate, enddate } = req.query;
-  let Location = location;
-  let StartDate = startdate;
-  let EndDate = enddate;
-  console.log("Request body:", location);
-  PropModel.find({ location: location })
-
-    .then(properties => {
-      res.code = "200";
-      res.status(200).json({ ...properties });
-    })
-
-    .catch(error => {
-      res.code = "400";
-      res.send = error;
-    });
-});
-
-app.get("/Property/:id", (req, res) => {
-  let propertyId = req.params.id;
-  console.log("Inside Property Page of ID:", propertyId);
-  PropModel.findById(propertyId)
-
-    .then(properties => {
-      res.code = "200";
-      res.status(200).json({ properties });
-    })
-
-    .catch(error => {
-      res.code = "400";
-      res.send = error;
-    });
-});
-
-app.get("/Trips", (req, res) => {
-  //let sql =
-  "SELECT property.*,booking.startdate,booking.enddate FROM property LEFT JOIN booking ON property.propertyid=booking.propertyid WHERE booking.userid=?";
-  //let sql =
-  //"SELECT property.*,booking.startdate,booking.enddate FROM property LEFT JOIN booking ON property.propertyid=booking.propertyid WHERE booking.userid=?";
-
-  PropModel.find({})
-    .catch(err => {
-      throw err;
-    })
-    .then(users => {
-      console.log(users);
-    });
-});
-
-app.get("/OwnerDash", (req, res) => {
-  let ownerId = req.session.userid;
-  let sql = "SELECT * FROM `property` WHERE ownerid = ?";
-  console.log("Fetching Owner Dashboard of Owner ID", ownerId);
-  pool.query(sql, [ownerId], (err, result) => {
-    if (err) {
-      throw err;
-      res.writeHead(400, {
-        "Content-Type": "text/plain"
-      });
-      res.end("No search results returned");
-    } else {
-      res.writeHead(200, {
-        "Content-Type": "application/json"
-      });
-      console.log("Result is ", result);
-      res.end(JSON.stringify(result));
-    }
-  });
-});
-
-app.post(
-  "/Booking",
-  passport.authenticate("jwt", { session: false }),
-  (req, res) => {
-    console.log("Inside booking:", req.body);
-    let { startdate, enddate, propertyid } = req.body;
-    let { email, userid } = req.user;
-    console.log("Booking made by ", email, " USER ID: ", userid);
-  }
-);
-// let sql1 = "SELECT ownerid FROM property WHERE propertyid =?";
-// let sql2 =
-//   "INSERT INTO booking (`bookingid`,`propertyid`,`userid`,`ownerid`,`startdate`, `enddate`) VALUES (NULL,?,?,?,?,?)";
-// let sql3 = "UPDATE property SET bookedflag=1 WHERE propertyid=?";
-// pool.query(sql1, [propertyId], (err, result) => {
-//   if (err) {
-//     throw err;
-//   } else {
-//     console.log(result[0].ownerid);
-//     let OWNERID = result[0].ownerid;
-//     pool.query(
-//       sql2,
-//       [propertyId, userId, OWNERID, startDate, endDate],
-//       (err, result1) => {
-//         if (err) throw err;
-//         else {
-//           console.log("Booking Successful", result1);
-//           pool.query(sql3, [propertyId], (err, result2) => {
-//             if (err) throw err;
-//             else {
-//               res.end("Bookng Successful");
-//             }
-//           });
-//         }
-//       }
-//     );
-//   }
-// });
-
-app.use(serveStatic(path.join(__dirname, "images")));
+//Server listening
 app.listen(3001, () => {
   console.log("Server Listening on port 3001");
 });
 
+// let owner = new UserModel({
+//   _id: new mongoose.Types.ObjectId(),
+//   email: "kailash@kailash.com",
+//   password: "admin",
+//   firstname: "Kailash",
+//   lastname: "Ramakrishnan",
+//   type: "Owner"
+// });
+// owner.save(err => {
+//   console.log(err);
+// });
+// let doc = new PropModel({
+//   _id: new mongoose.Types.ObjectId(),
+//   name: "Great place to live",
+//   owner: owner._id,
+//   sleeps: 5,
+//   bathrooms: 3,
+//   bedrooms: 3,
+//   type: "Cottage",
+//   price: 350,
+//   location: "San Jose"
+// });
+// doc.save(err => {
+//   console.log(err);
+// });
 // console.log("Inside Login request");
 // UserModel.findOne({ email: req.body.email })
 //   .catch(err => {
@@ -459,175 +240,6 @@ app.listen(3001, () => {
 //       console.log("Error creating property!", err);
 //       res.sendStatus(400).end();
 //     });
-// });
-
-// let sql =
-//   "INSERT INTO property (`propertyid`,`ownerid`,`name`, `sleeps`, `bathrooms`, `bedrooms`,`type`,`price`,`location`) VALUES (NULL,?,?,?,?,?,?,?,'san jose')";
-// pool.query(
-//   sql,
-//   [ownerId, name, sleeps, bathrooms, bedrooms, type, price],
-//   (err, result) => {
-//     if (err) {
-//       console.log("Unable post property");
-//       throw err;
-//       res.writeHead(400, {
-//         "Content-Type": "text/plain"
-//       });
-//       res.end("Unable to create property");
-//     } else {
-//       console.log("Property created successful", result);
-//       res.writeHead(200, {
-//         "Content-Type": "application/json"
-//       });
-//       res.end(JSON.stringify(result));
-//     }
-//   }
-// );
-// });
-
-//   console.log("Inside Update User", req.body);
-//   let firstName = req.body.firstname;
-//   let lastName = req.body.lastname;
-//   let location = req.body.location;
-//   let userId = req.session.userid;
-
-//   let sql = "UPDATE users SET firstname=?,lastname=?,location=? WHERE userid=?";
-//   pool.query(sql, [firstName, lastName, location, userId], (err, result) => {
-//     if (err) {
-//       throw err;
-//       res.writeHead(400, {
-//         "Content-Type": "text/plain"
-//       });
-//       res.end("No results returned");
-//     } else {
-//       console.log(`User ${userId} has been updated`);
-//       res.writeHead(200, {
-//         "Content-Type": "application/json"
-//       });
-//       res.end(JSON.stringify(result));
-//     }
-//   });
-// });
-
-//   let sql = "SELECT * FROM `property` WHERE `location` = ?";
-//   pool.query(sql, [location], (err, result) => {
-//     console.log("SQL query", sql);
-//     if (err) {
-//       throw err;
-//       res.writeHead(400, {
-//         "Content-Type": "text/plain"
-//       });
-//       res.end("No search results returned");
-//     } else {
-//       res.writeHead(200, {
-//         "Content-Type": "application/json"
-//       });
-//       res.end(JSON.stringify(result));
-//       console.log("Result:", result);
-//     }
-//   });
-// });
-
-// app.get("/Trips", (req, res) => {
-//   let userId = req.session.userid;
-//   let sql =
-//     "SELECT property.*,booking.startdate,booking.enddate FROM property LEFT JOIN booking ON property.propertyid=booking.propertyid WHERE booking.userid=?";
-//   //let sql =
-//   //"SELECT property.*,booking.startdate,booking.enddate FROM property LEFT JOIN booking ON property.propertyid=booking.propertyid WHERE booking.userid=?";
-
-//   console.log("Traveller dashboard");
-//   pool.query(sql, [userId], (err, result) => {
-//     if (err) {
-//       throw err;
-//       res.writeHead(400, {
-//         "Content-Type": "text/plain"
-//       });
-//       res.end("No search results returned");
-//     } else {
-//       res.writeHead(200, {
-//         "Content-Type": "application/json"
-//       });
-//       res.end(JSON.stringify(result));
-//       console.log("Trips result is", result);
-//     }
-//   });
-// });
-
-// app.get("/OwnerDash", (req, res) => {
-//   let ownerId = req.session.userid;
-//   let sql = "SELECT * FROM `property` WHERE ownerid = ?";
-//   console.log("Fetching Owner Dashboard of Owner ID", ownerId);
-//   pool.query(sql, [ownerId], (err, result) => {
-//     if (err) {
-//       throw err;
-//       res.writeHead(400, {
-//         "Content-Type": "text/plain"
-//       });
-//       res.end("No search results returned");
-//     } else {
-//       res.writeHead(200, {
-//         "Content-Type": "application/json"
-//       });
-//       console.log("Result is ", result);
-//       res.end(JSON.stringify(result));
-//     }
-//   });
-// });
-
-// app.post("/Property", (req, res) => {
-//   let sql1 = "UPDATE ";
-//   let sql2 =
-//     "INSERT INTO property (`propertyid`,`ownerid`,`name`, `sleeps`, `bathrooms`, `bedrooms`,`type`,`price`,`location`) VALUES (NULL,?,?,?,?,?,?,?,'san jose')";
-// });
-
-// app.post("/Photos", upload.single("selectedFile"), (req, res) => {
-//   if (!req.file) {
-//     console.log("No file received");
-//     res.send({
-//       success: false
-//     });
-//   } else {
-//     console.log("File received!", res.file);
-//     res.send();
-//   }
-// });
-
-// app.post("/Booking", (req, res) => {
-//   console.log("Inside booking:", req.body);
-
-//   let startDate = req.body.startdate;
-//   let endDate = req.body.enddate;
-//   let propertyId = req.body.propertyid;
-//   let userId = req.session.userid;
-//   console.log("Booking made by User ID:", userId);
-//   let sql1 = "SELECT ownerid FROM property WHERE propertyid =?";
-//   let sql2 =
-//     "INSERT INTO booking (`bookingid`,`propertyid`,`userid`,`ownerid`,`startdate`, `enddate`) VALUES (NULL,?,?,?,?,?)";
-//   let sql3 = "UPDATE property SET bookedflag=1 WHERE propertyid=?";
-//   pool.query(sql1, [propertyId], (err, result) => {
-//     if (err) {
-//       throw err;
-//     } else {
-//       console.log(result[0].ownerid);
-//       let OWNERID = result[0].ownerid;
-//       pool.query(
-//         sql2,
-//         [propertyId, userId, OWNERID, startDate, endDate],
-//         (err, result1) => {
-//           if (err) throw err;
-//           else {
-//             console.log("Booking Successful", result1);
-//             pool.query(sql3, [propertyId], (err, result2) => {
-//               if (err) throw err;
-//               else {
-//                 res.end("Bookng Successful");
-//               }
-//             });
-//           }
-//         }
-//       );
-//     }
-//   });
 // });
 
 //start your server on port 3001
