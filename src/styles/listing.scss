@@ -11,6 +11,21 @@
   .top-container {
     border-bottom: 1px solid $gray;
   }
+  .loader {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      margin: auto;
+    }
+  }
   .search {
     background: white;
     border-color: #5e6d77;

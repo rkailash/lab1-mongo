@@ -193,7 +193,7 @@ class TravelerDashboard extends Component {
     return (
       <div className="traveler">
         <Header />
-        <ul className="nav">
+        <ul className={`nav ${activePath}`}>
           {routes.map((item, key) => (
             <li key={key} className={activePath === item.value ? "active" : ""}>
               <Link to={`/Traveler/${item.value}`}>{item.label}</Link>

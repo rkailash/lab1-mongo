@@ -1,5 +1,7 @@
 import React, { Component } from "react";
 import axios from "axios";
+import { saveSearch } from "actions";
+import { connect } from "react-redux";
 import Search from "./Search";
 import RecentActivity from "./RecentActivity";
 import Header from "./Header";
@@ -12,61 +14,20 @@ class Home extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      goToListing: false,
-      items: []
+      goToListing: false
     };
   }
-
-  // componentDidMount() {
-  //   const data = { location: "San Jose" };
-  //   axios.post("http://localhost:3001/Home", data).then(response => {
-  //     console.log("Axios POST response:", response.status);
-  //     if (response.status === 200) {
-  //       console.log(response);
-  //     } else {
-  //       console.log(response);
-  //     }
-  //   });
-  // }
-
   onClickSearch = query => {
-    this.props.saveSearchQuery(query);
     const startDate = moment(query.startDate).format("YYYY-MM-DD");
     const endDate = moment(query.startDate).format("YYYY-MM-DD");
-    axios.defaults.withCredentials = true;
-    axios
-      .get(`http://localhost:3001/PropertyList`, {
-        params: {
-          location: "san jose",
-          startDate,
-          endDate
-        }
-      })
-      .then(response => {
-        console.log("Axios POST response:", response.status);
-        if (response.status === 200) {
-          this.setState({ goToListing: true, items: response.data });
-        } else {
-          console.log(response);
-        }
-      });
+    this.props.saveSearch(query);
+    this.setState({ goToListing: true });
   };
   render() {
-    console.log(this.props.userInfo);
-    const { items, query } = this.state;
+    const { location } = this.props;
     if (this.state.goToListing) {
-      return (
-        <Redirect
-          to={{
-            pathname: "/Listing",
-            state: {
-              referrer: {
-                items
-              }
-            }
-          }}
-        />
-      );
+      const query = { location };
+      return <Redirect to={`/Listing?location=${location}`} />;
     }
     return (
       <div className="home">
@@ -99,4 +60,16 @@ class Home extends Component {
   }
 }
 
-export default Home;
+const mapStateToProps = state => ({
+  location: state.home.location,
+  userInfo: state.login.userInfo
+});
+
+const mapDispatchToProps = dispatch => ({
+  saveSearch: query => dispatch(saveSearch(query))
+});
+
+export default connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(Home);

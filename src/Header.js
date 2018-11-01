@@ -13,7 +13,7 @@ const LoginDropdown = () => (
     <DropdownToggle caret>Login</DropdownToggle>
     <DropdownMenu>
       <DropdownItem>
-        <Link to="/TravellerLogin">Traveler Login</Link>
+        <Link to="/TravelerLogin">Traveler Login</Link>
       </DropdownItem>
       <DropdownItem>
         <Link to="/OwnerLogin">Owner Login</Link>

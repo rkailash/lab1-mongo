@@ -51,8 +51,8 @@ const multiparty = require("multiparty");
 
 // configure the keys for accessing AWS
 AWS.config.update({
-  accessKeyId: "AKIAIU7RVJWKNGZR4RDQ",
-  secretAccessKey: "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"
+  accessKeyId: "",
+  secretAccessKey: ""
 });
 
 // configure AWS to work with promises
@@ -131,7 +131,7 @@ app.post("/test-upload", (req, res) => {
 });
 app.use("/Login", require("./routes/login"));
 app.use("/Register", require("./routes/register"));
-app.use("/Owner", require("./routes/owner-post"));
+app.use("/AddProperty", require("./routes/owner-post"));
 app.use("/Home", require("./routes/home"));
 app.use("/PropertyList", require("./routes/property-list"));
 app.use("/Property", require("./routes/property-details"));

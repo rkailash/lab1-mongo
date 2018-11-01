@@ -1,18 +1,12 @@
 import React, { Component } from "react";
+import { connect } from "react-redux";
+import { addProperty, fetchProperties } from "actions";
 import Header from "./Header";
 import Inbox from "./Inbox";
-import Owner from "./Owner";
+import AddProperty from "./AddProperty";
+import { toastr } from "react-redux-toastr";
 import { Link, Redirect, Route } from "react-router-dom";
 import { Button, Form, FormGroup, Input } from "reactstrap";
-import {
-  Card,
-  CardImg,
-  CardText,
-  CardBody,
-  CardTitle,
-  CardSubtitle
-} from "reactstrap";
-import { images } from "./images";
 import axios from "axios";
 import {
   Dropdown,
@@ -28,55 +22,6 @@ const routes = [
   { value: "profile", label: "Profile" },
   { value: "add-new", label: "Add Property" }
 ];
-
-const MyProperties = ({ properties }) => {
-  // bathrooms: 3
-  // bedrooms: 3
-  // bookedflag: 0
-  // location: "san jose"
-  // name: "A nice place to live"
-  // ownerid: 3
-  // price: 175
-  // propertyid: 2
-  // sleeps: 2
-  // type: "apartment"
-  return (
-    <div className="properties">
-      {properties.length === 0 ? (
-        <div className="no-properties">
-          <p>You don't have any properties listed.</p>
-          <button type="button" className="start-search main-btn">
-            List your property
-          </button>
-        </div>
-      ) : (
-        <div className="property-list">
-          {properties.map((item, key) => {
-            const image = images[item.ownerid];
-            return (
-              <Card key={key}>
-                <CardImg
-                  top
-                  width="100%"
-                  src={image[key].value}
-                  alt="Card image cap"
-                />
-                <CardBody>
-                  <CardTitle>{item.name}</CardTitle>
-                  <CardSubtitle>ID: {item.propertyid}</CardSubtitle>
-                  {item.bookedFlag === 1 && (
-                    <CardText>This property has an upcoming booking.</CardText>
-                  )}
-                  <Button>View Details</Button>
-                </CardBody>
-              </Card>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-};
 
 const OwnerDropdown = ({ toggle, isOpen }) => {
   return (
@@ -228,22 +173,28 @@ class OwnerDashboard extends Component {
     super(props);
     this.state = {
       activeFormGroup: undefined,
-      activeNav: "add-new",
-      properties: []
+      activeNav: props.location.pathname.split("OwnerDashboard/")[1]
     };
   }
-  componentDidMount() {
-    axios.get(`http://localhost:3001/OwnerDash`).then(response => {
-      this.setState({ properties: response.data });
-    });
+  componentDidUpdate(prevProps) {
+    const status = this.props.addPropertyStatus;
+    if (status && prevProps.addPropertyStatus !== status) {
+      status == 200
+        ? toastr.success(`Success! Your property is live now!`)
+        : toastr.error(
+            `There has been some problem while adding your property. Please try again.`
+          );
+    }
   }
   setActiveNav = item => this.setState({ activeNav: item.value });
   render() {
+    console.log(this.props.userInfo._id);
     if (!this.props.userInfo) {
       return <Redirect to="/OwnerLogin" />;
+    } else if (this.props.addPropertyStatus == 200) {
+      return <Redirect to="/OwnerDashboard/profile" />;
     }
-    const { activeFormGroup, properties } = this.state;
-    const activePath = this.props.location.pathname.split("od/")[1];
+    const { activeFormGroup, properties, activeNav } = this.state;
     return (
       <div className="od">
         <Header
@@ -252,21 +203,31 @@ class OwnerDashboard extends Component {
             <OwnerDropdown toggle={() => toggle()} isOpen={isOpen} />
           )}
         />
-        <ul className={`${activePath} nav`}>
+        <ul className={`${activeNav} nav`}>
           {routes.map((item, key) => (
-            <li key={key} className={activePath === item.value ? "active" : ""}>
-              <Link to={`/od/${item.value}`}>{item.label}</Link>
+            <li key={key} className={activeNav === item.value ? "active" : ""}>
+              <Link
+                onClick={() => this.setActiveNav(item)}
+                to={`/OwnerDashboard/${item.value}`}
+              >
+                {item.label}
+              </Link>
             </li>
           ))}
         </ul>
         <div className="top-container">
           <Route
-            path="/od/properties"
-            render={() => <MyProperties properties={properties} />}
+            path="/OwnerDashboard/properties"
+            render={() => <MyProperties properties={properties} onLoad={() => this.props.fetchMyProperties()} />}
           />
-          <Route path="/od/add-new" render={() => <Owner />} />
           <Route
-            path="/od/profile"
+            path="/OwnerDashboard/add-new"
+            render={() => (
+              <AddProperty onAdd={data => this.props.onAddProperty(data)} />
+            )}
+          />
+          <Route
+            path="/OwnerDashboard/profile"
             render={() => (
               <Profile
                 activeItem={activeFormGroup}
@@ -275,11 +236,25 @@ class OwnerDashboard extends Component {
               />
             )}
           />
-          <Route path="/od/inbox" render={() => <Inbox />} />
+          <Route path="/OwnerDashboard/inbox" render={() => <Inbox />} />
         </div>
       </div>
     );
   }
 }
 
-export default OwnerDashboard;
+const mapStateToProps = state => ({
+  addPropertyStatus: state.ownerdashboard.addPropertyStatus,
+  properties: state.ownerdashboard.properties,
+  userInfo: state.login.userInfo
+});
+
+const mapDispatchToProps = dispatch => ({
+  onAddProperty: data => dispatch(addProperty(data)),
+  fetchMyProperties: id => dispatch(fetchProperties(id))
+});
+
+export default connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(OwnerDashboard);

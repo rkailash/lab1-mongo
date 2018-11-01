@@ -1,5 +1,6 @@
 import { connect } from "react-redux";
 import React, { Component } from "react";
+import { Redirect } from "react-router-dom";
 import { handleLoginChange, handleLogin } from "actions";
 import TravelerLogin from "../TravelerLogin";
 import { toastr } from "react-redux-toastr";
@@ -21,20 +22,31 @@ const mapDispatchToProps = dispatch => ({
 });
 
 class LoginContainer extends Component {
-  state = {};
+  state = {
+    loginType: this.props.location.pathname
+  };
   componentDidUpdate(prevProps) {
     if (prevProps.authFlag !== this.props.authFlag) {
-      this.props.setUserInfo(this.props.userInfo);
       toastr.success(`Welcome, ${this.props.userInfo.firstname}!`);
     }
   }
   render() {
-    console.log("State updated", this.props.authFlag);
-    return this.props.location.pathname === "/OwnerLogin" ? (
-      <OwnerLogin {...this.props} />
-    ) : (
-      <TravelerLogin {...this.props} />
-    );
+    const { authFlag, userInfo } = this.props;
+    const { loginType } = this.state;
+    console.log(userInfo);
+    if (authFlag) {
+      return userInfo.type === "traveler" ? (
+        <Redirect to="/Home" />
+      ) : (
+        <Redirect to="/OwnerDashboard/inbox" />
+      );
+    } else {
+      return loginType === "/OwnerLogin" ? (
+        <OwnerLogin {...this.props} />
+      ) : (
+        <TravelerLogin {...this.props} />
+      );
+    }
   }
 }
 

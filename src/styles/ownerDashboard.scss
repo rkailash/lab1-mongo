@@ -2,6 +2,7 @@
 
 .od {
   overflow: hidden;
+  font-family: $font;
   .header {
     position: fixed;
     width: 100%;
@@ -33,6 +34,9 @@
     &.properties,
     &.profile {
       padding-left: 32px;
+    }
+    &.inbox {
+      padding-left: 25%;
     }
     li {
       display: inline-block;
