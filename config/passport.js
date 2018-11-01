@@ -48,13 +48,13 @@ module.exports = function(passport) {
             return done(err);
           }
           if (!user) {
-            return done(null, false);
+            return done(`Unable to find the user ${email}. Please Register!`);
           }
           bcrypt.compare(password, user.password, (err, passwordsMatch) => {
-            if (err) throw err;
+            if (err) return done(err);
 
             if (passwordsMatch) return done(null, user);
-            else return done("Incorrect username/password");
+            else return done("Incorrect email/password combination");
           });
         });
       }

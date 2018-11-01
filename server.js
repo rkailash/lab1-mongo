@@ -75,40 +75,40 @@ const uploadFile = (buffer, name, type) => {
 
 //Login Route (needs to be moved to express route)
 
-app.post("/Login", (req, res, next) => {
-  console.log("Inside Login route");
-  passport.authenticate("local", { session: false }, (error, user) => {
-    if (error || !user) {
-      console.log("User/Password combination doesn't exist!");
-      res.status(400).send({ error });
-    }
-    console.log("Logged in user details", user);
-    /** This is what ends up in our JWT */
-    const payload = {
-      email: user.email,
-      userid: user._id,
-      expires: Date.now() + parseInt(process.env.JWT_EXPIRATION_MS)
-    };
+// app.post("/Login", (req, res, next) => {
+//   console.log("Inside Login route");
+//   passport.authenticate("local", { session: false }, (error, user) => {
+//     if (error || !user) {
+//       console.log("User/Password combination doesn't exist!");
+//       res.status(400).send({ error });
+//     }
+//     console.log("Logged in user details", user);
+//     /** This is what ends up in our JWT */
+//     const payload = {
+//       email: user.email,
+//       userid: user._id,
+//       expires: Date.now() + parseInt(process.env.JWT_EXPIRATION_MS)
+//     };
 
-    /** assigns payload to req.user */
-    req.login(payload, { session: false }, error => {
-      if (error) {
-        console.log("Payload assign error", error);
-        res.status(400).send({ error });
-      }
+//     /** assigns payload to req.user */
+//     req.login(payload, { session: false }, error => {
+//       if (error) {
+//         console.log("Payload assign error", error);
+//         res.status(400).send({ error });
+//       }
 
-      /** generate a signed json web token and return it in the response */
-      const token = jwt.sign(JSON.stringify(payload), config.secret);
+//       /** generate a signed json web token and return it in the response */
+//       const token = jwt.sign(JSON.stringify(payload), config.secret);
 
-      /** assign our jwt to the cookie */
-      res.cookie("jwt", token, {
-        expires: new Date(Date.now() + 900000),
-        httpOnly: true
-      });
-      res.end();
-    });
-  })(req, res, next);
-});
+//       /** assign our jwt to the cookie */
+//       res.cookie("jwt", token, {
+//         expires: new Date(Date.now() + 900000),
+//         httpOnly: true
+//       });
+//       res.end();
+//     });
+//   })(req, res, next);
+// });
 
 //Other Express Routes
 app.post("/test-upload", (req, res) => {
@@ -129,7 +129,7 @@ app.post("/test-upload", (req, res) => {
     }
   });
 });
-
+app.use("/Login", require("./routes/login"));
 app.use("/Register", require("./routes/register"));
 app.use("/Owner", require("./routes/owner-post"));
 app.use("/Home", require("./routes/home"));
