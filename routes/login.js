@@ -43,7 +43,12 @@ router.post("/", (req, res, next) => {
           expires: new Date(Date.now() + 900000),
           httpOnly: true
         });
-        res.send(`User ${user.email} logged in!`);
+        res.status(200).json({
+          email: user.email,
+          firstname: user.firstname,
+          lastname: user.lastname,
+          type: user.type
+        });
       });
     })(req, res, next);
   }

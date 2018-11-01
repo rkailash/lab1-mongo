@@ -16,8 +16,7 @@ const PropSchema = Schema({
   },
   price: Number,
   location: {
-    type: String,
-    lowercase: true
+    type: String
   },
   photos: Array
 });

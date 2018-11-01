@@ -9,8 +9,8 @@ const multiparty = require("multiparty");
 
 // configure the keys for accessing AWS
 AWS.config.update({
-  accessKeyId: "AKIAIU7RVJWKNGZR4RDQ",
-  secretAccessKey: "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"
+  accessKeyId: "",
+  secretAccessKey: ""
 });
 
 // configure AWS to work with promises
