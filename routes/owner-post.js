@@ -18,18 +18,25 @@ router.post(
   passport.authenticate("jwt", { session: false }),
   (req, res) => {
     console.log(req.user.userid);
-    console.log("Inside Owner POST request! User id is :", req.user.email);
-    let { headline, accomodates, bathrooms, bedrooms, type } = req.body.details;
-    let { price, location, photos } = req.body;
+    console.log("Inside Property POST request! User id is :", req.user.email);
+    let {
+      headline,
+      accomodates,
+      bathrooms,
+      bedrooms,
+      type,
+      price,
+      city
+    } = req.body;
     let Name = headline;
     let Sleeps = accomodates;
     let Bathrooms = bathrooms;
     let Bedrooms = bedrooms;
     let Type = type;
     let Price = price;
-    let Location = location;
-    let Photos = photos;
+    let Location = city;
     console.log("Request body", req.body);
+
 
     let Property = new PropModel({
       _id: new mongoose.Types.ObjectId(),

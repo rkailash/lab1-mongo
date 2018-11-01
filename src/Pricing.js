@@ -5,17 +5,17 @@ class Pricing extends React.Component {
     super(props);
     this.price = createRef();
     this.state = {
-      price: props.price
+      price: 0
     };
   }
   componentWillUnmount() {
-    this.props.onChange(this.state.price);
+    this.props.onChange(this.state);
   }
   render() {
     const { price } = this.state;
     return (
       <div className="pricing">
-        {this.props.onClickNextButton()}
+        {this.props.nextButton()}
         <h2>Pricing</h2>
         <form className="location-form">
           <div className="form-group">
@@ -44,9 +44,5 @@ class Pricing extends React.Component {
     );
   }
 }
-
-Pricing.defaultProps = {
-  price: 0
-};
 
 export default Pricing;

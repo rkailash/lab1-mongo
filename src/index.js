@@ -11,26 +11,21 @@ import FileUpload from "./simplecomp";
 const store = configureStore();
 
 ReactDOM.render(
-  <div>
-    <FileUpload />
-  </div>,
-  // <Provider store={store}>
-  //   <Fragment>
-  //     <BrowserRouter>
-
-  // {/* <App /> */}
-
-  //     </BrowserRouter>
-  //     <ReduxToastr
-  //       timeOut={2500}
-  //       newestOnTop={false}
-  //       preventDuplicates
-  //       position="top-left"
-  //       transitionIn="fadeIn"
-  //       transitionOut="fadeOut"
-  //       closeOnToastrClick
-  //     />
-  //   </Fragment>
-  // </Provider>,
+  <Provider store={store}>
+    <Fragment>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+      <ReduxToastr
+        timeOut={2500}
+        newestOnTop={false}
+        preventDuplicates
+        position="top-left"
+        transitionIn="fadeIn"
+        transitionOut="fadeOut"
+        closeOnToastrClick
+      />
+    </Fragment>
+  </Provider>,
   document.getElementById("root")
 );

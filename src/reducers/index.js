@@ -71,11 +71,7 @@ const createMessage = (message, messages) => {
   };
 };
 
-const messagesInit = {
-  messages: []
-};
-
-export const messages = (state = messagesInit, action) => {
+export const messages = (state = { messages: [] }, action) => {
   switch (action.type) {
     case types.SUBMIT_MESSAGE:
       const msgObject = createMessage(action.message, state.messages);
@@ -101,11 +97,7 @@ export const messages = (state = messagesInit, action) => {
   }
 };
 
-const registerInit = {
-  isRegistered: false
-};
-
-export const register = (state = registerInit, action) => {
+export const register = (state = { isRegistered: false }, action) => {
   switch (action.type) {
     case types.REGISTER_SUCCESS:
       return { ...state, isRegistered: true };
@@ -116,11 +108,48 @@ export const register = (state = registerInit, action) => {
   }
 };
 
+export const home = (state = {}, action) => {
+  switch (action.type) {
+    case types.SAVE_SEARCH:
+      return { ...action.query };
+    default:
+      return state;
+  }
+};
+
+export const listing = (
+  state = { isLoading: true, properties: [] },
+  action
+) => {
+  switch (action.type) {
+    case types.SAVE_SEARCH_RESULTS:
+      return { ...state, properties: action.properties, isLoading: false };
+    default:
+      return state;
+  }
+};
+
+const ownerdashboardInit = {
+  addPropertyStatus: undefined
+};
+
+export const ownerdashboard = (state = ownerdashboardInit, action) => {
+  switch (action.type) {
+    case types.ADD_PROPERTY_STATUS:
+      return { ...state, addPropertyStatus: action.status };
+    default:
+      return state;
+  }
+};
+
 const rootReducer = combineReducers({
   messages,
   login,
   logout,
   register,
+  home,
+  listing,
+  ownerdashboard,
   toastr: toastrReducer
 });
 

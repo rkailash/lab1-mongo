@@ -1,4 +1,4 @@
-import React, { Component, createRef } from "react";
+import React, { Component } from "react";
 import {
   DateRangePicker,
   SingleDatePicker,
@@ -9,7 +9,7 @@ import Counter from "templates/Counter";
 import RadioGroup from "templates/RadioGroup";
 import Dropdown from "templates/Dropdown";
 import moment from "moment";
-import { Popover, PopoverHeader, PopoverBody } from 'reactstrap';
+import { Popover, PopoverHeader, PopoverBody } from "reactstrap";
 import "react-dates/initialize";
 import "react-dates/lib/css/_datepicker.css";
 import "styles/search.scss";
@@ -17,7 +17,6 @@ import "styles/search.scss";
 class Search extends Component {
   constructor(props) {
     super(props);
-    this.input = createRef();
     this.state = {
       dropdownIsOpen: false,
       startDate: null,
@@ -28,15 +27,9 @@ class Search extends Component {
         pets: false
       },
       location: null,
-      location_name: null,
       showError: false
     };
   }
-  componentDidMount() {
-  }
-  onChange = () => {
-    this.setState({ location, location_name });
-  };
   updateAdultGuests = i => {
     const guests = {
       ...this.state.guests,
@@ -51,20 +44,16 @@ class Search extends Component {
     };
     this.setState({ guests });
   };
+  onEnter = () => {
+    this.onClickSearch();
+  }
   toggleDropdown = () =>
     this.setState({ dropdownIsOpen: !this.state.dropdownIsOpen });
   onClickSearch = () => {
-    const { location, startDate, endDate, guests } = this.state;
-    if (!startDate || !endDate) {
-      this.setState({ showError: true })
-    } else {
-      this.props.onClick({
-        location,
-        startDate,
-        endDate,
-        guests
-      });
-    }
+    const {location} = this.state;
+    this.props.onClick({
+      location,
+    });
   };
   render() {
     const {
@@ -80,21 +69,38 @@ class Search extends Component {
     return (
       <div className="search">
         <input
-          className={`location-search${(showError && !location) ? " error" : ""}`}
-          ref={this.input}
-          placeholder={`${query.location_name !== undefined ? query.location_name : "Where do you want to go?"}`}
-          onFocus={() => this.setState({showError: false})}
-          onChange={() => this.onChange()}
+          className={`location-search${showError && !location ? " error" : ""}`}
+          placeholder={`${
+            query !== undefined
+              ? query.location
+              : "Where do you want to go?"
+          }`}
+          onKeyPress={(e) => e.key == 'Enter' && this.onEnter()}
+          onFocus={() => this.setState({ showError: false })}
+          onChange={(e) => this.setState({ location: e.target.value })}
         />
         <div className="v-line" />
-        <button className={`my-date-range${(showError && !startDate && !endDate) ? " error" : ""}`} onClick={() => this.setState({showError: false})}>
+        <button
+          className={`my-date-range${
+            showError && !startDate && !endDate ? " error" : ""
+          }`}
+          onClick={() => this.setState({ showError: false })}
+        >
           <DateRangePicker
             startDate={startDate} // momentPropTypes.momentObj or null,
             startDateId="listing_header_start_date" // PropTypes.string.isRequired,
             endDate={endDate} // momentPropTypes.momentObj or null,
             endDateId="listing_header_end_date" // PropTypes.string.isRequired,
-            startDatePlaceholderText={query.startDate === null ? "Arrive" : moment(query.startDate).format("YYYY-MM-DD")}
-            endDatePlaceholderText={query.endDate === null ? "Depart" : moment(query.endDate).format("YYYY-MM-DD")}
+            startDatePlaceholderText={
+              query === undefined
+                ? "Arrive"
+                : moment(query.startDate).format("YYYY-MM-DD")
+            }
+            endDatePlaceholderText={
+              query === undefined
+                ? "Depart"
+                : moment(query.endDate).format("YYYY-MM-DD")
+            }
             onDatesChange={({ startDate, endDate }) =>
               this.setState({ startDate, endDate })
             } // PropTypes.func.isRequired,
@@ -103,15 +109,21 @@ class Search extends Component {
           />
         </button>
         <div className="v-line" />
-        <div className="dropdown-group" onClick={() => this.setState({showError: false})}>
+        <div
+          className="dropdown-group"
+          onClick={() => this.setState({ showError: false })}
+        >
           <button
             type="button"
             className="guest-selector"
             onClick={this.toggleDropdown}
           >{`${guests.adults + guests.children} Guest${
             guests.adults + guests.children > 1 ? "s" : ""
-            } ${guests.pets ? ", Pets" : ""}`}</button>
-          <Dropdown isOpen={dropdownIsOpen} onClick={() => this.toggleDropdown()}>
+          } ${guests.pets ? ", Pets" : ""}`}</button>
+          <Dropdown
+            isOpen={dropdownIsOpen}
+            onClick={() => this.toggleDropdown()}
+          >
             <p>Adults:</p>
             <Counter min={1} onIncrement={i => this.updateAdultGuests(i)} />
             <p>Children:</p>
@@ -133,7 +145,11 @@ class Search extends Component {
               }
             />
             <div className="button-group">
-              <button type="button" className="apply-guests" onClick={() => this.toggleDropdown()}>
+              <button
+                type="button"
+                className="apply-guests"
+                onClick={() => this.toggleDropdown()}
+              >
                 Apply
               </button>
             </div>
@@ -143,8 +159,12 @@ class Search extends Component {
         <div className="submit">
           <button type="button" id="Popover2" onClick={this.onClickSearch}>
             Search
-        </button>
-          <Popover placement="bottom" isOpen={this.state.showError} target="Popover2">
+          </button>
+          <Popover
+            placement="bottom"
+            isOpen={this.state.showError}
+            target="Popover2"
+          >
             <PopoverHeader>Error</PopoverHeader>
             <PopoverBody>
               {location || <p>Please choose a location.</p>}
@@ -156,13 +176,5 @@ class Search extends Component {
     );
   }
 }
-
-Search.defaultProps = {
-  onClick: () => { },
-  query: {
-    startDate: null,
-    endDate: null
-  }
-};
 
 export default Search;

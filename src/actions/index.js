@@ -43,6 +43,13 @@ const logoutFailure = data => {
   };
 };
 
+const saveSearchResults = results => {
+  return {
+    ...results,
+    type: types.SAVE_SEARCH_RESULTS
+  };
+};
+
 export const handleLoginChange = data => {
   return {
     type: types.HANDLE_LOGIN_CHANGE,
@@ -60,6 +67,12 @@ export const fetchMessages = id => {
   return {
     type: types.FETCH_MESSAGES,
     id
+  };
+};
+export const saveAddPropertyStatus = status => {
+  return {
+    type: types.ADD_PROPERTY_STATUS,
+    status
   };
 };
 
@@ -100,6 +113,38 @@ export const registerUser = data => {
       })
       .catch(err => {
         dispatch(registerFailure());
+      });
+  };
+};
+
+export const saveSearch = query => {
+  return {
+    type: types.SAVE_SEARCH,
+    query
+  };
+};
+
+export const fetchSearchResults = params => {
+  console.log("params", params);
+  return dispatch => {
+    return axios.get("http://localhost:3001/PropertyList", { params }).then(
+      res => {
+        dispatch(saveSearchResults({ properties: res.data }));
+      },
+      err => {
+        console.log("Failed to fetch Search Results!");
+      }
+    );
+  };
+};
+
+export const addProperty = data => {
+  return dispatch => {
+    return axios
+      .post("http://localhost:3001/AddProperty", data)
+      .then(response => {
+        console.log("Axios POST response:", response.status);
+        dispatch(saveAddPropertyStatus(response.status));
       });
   };
 };

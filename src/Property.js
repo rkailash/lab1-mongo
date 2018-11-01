@@ -8,7 +8,6 @@ import {images} from './images';
 import moment from "moment";
 import { Redirect } from "react-router-dom";
 import "styles/productPage.scss";
-import { userInfo } from "os";
 
 const item = {
   price: 75,
@@ -74,6 +73,7 @@ class Property extends Component {
   };
 
   render() {
+    console.log(this.props.match.params.id);
     const { propertyDetails, goToLogin, isFullScreen, isBookingSuccessful, currentImagePos } = this.state;
     const {userInfo} = this.props;
     if(goToLogin) {

@@ -3,26 +3,17 @@ import React, { createRef } from "react";
 class Details extends React.Component {
   constructor(props) {
     super(props);
-    this.headline = createRef();
-    this.desc = createRef();
-    this.type = createRef();
-    this.bedrooms = createRef();
-    this.bathrooms = createRef();
-    this.accomodates = createRef();
     this.state = {
-      values: {
-        headline: props.values.headline,
-        description: props.values.description,
-        type: props.values.type,
-        bedrooms: props.values.bedrooms,
-        bathrooms: props.values.bathrooms,
-        accomodates: props.values.accomodates
-      }
+      headline: "",
+      description: "",
+      type: "",
+      bedrooms: "",
+      bathrooms: "",
+      accomodates: ""
     };
   }
-
   componentWillUnmount() {
-    this.props.onChange(this.state.values);
+    this.props.onChange(this.state);
   }
   render() {
     const {
@@ -32,11 +23,11 @@ class Details extends React.Component {
       bedrooms,
       bathrooms,
       accomodates
-    } = this.state.values;
+    } = this.state;
     return (
       <div className="panel panel-default">
         <div className="panel-body">
-          {this.props.onClickNextButton()}
+          {this.props.nextButton()}
           <h2>Describe your property</h2>
           <hr />
           <form className="details-form">
@@ -44,16 +35,13 @@ class Details extends React.Component {
               <label>Headline</label>
               <input
                 value={headline}
-                ref={this.headline}
                 id="headline"
                 type="text"
                 className="form-control"
-                onChange={() =>
+                onChange={e =>
                   this.setState({
-                    values: {
-                      ...this.state.values,
-                      headline: this.headline.current.value
-                    }
+                    ...this.state,
+                    headline: e.target.value
                   })
                 }
               />
@@ -62,16 +50,13 @@ class Details extends React.Component {
               <label>Property description</label>
               <input
                 value={description}
-                ref={this.desc}
                 id="pdescription"
                 type="text"
                 className="form-control"
-                onChange={() =>
+                onChange={e =>
                   this.setState({
-                    values: {
-                      ...this.state.values,
-                      description: this.desc.current.value
-                    }
+                    ...this.state,
+                    description: e.target.value
                   })
                 }
               />
@@ -80,16 +65,13 @@ class Details extends React.Component {
               <label>Property type</label>
               <input
                 value={type}
-                ref={this.type}
                 id="ptype"
                 type="text"
                 className="form-control"
-                onChange={() =>
+                onChange={e =>
                   this.setState({
-                    values: {
-                      ...this.state.values,
-                      type: this.type.current.value
-                    }
+                    ...this.state,
+                    type: e.target.value
                   })
                 }
               />
@@ -99,16 +81,13 @@ class Details extends React.Component {
               <label>Bedrooms</label>
               <input
                 value={bedrooms}
-                ref={this.bedrooms}
                 id="bedrooms"
                 type="text"
                 className="form-control"
-                onChange={() =>
+                onChange={e =>
                   this.setState({
-                    values: {
-                      ...this.state.values,
-                      bedrooms: this.bedrooms.current.value
-                    }
+                    ...this.state,
+                    bedrooms: e.target.value
                   })
                 }
               />
@@ -118,16 +97,13 @@ class Details extends React.Component {
               <label>Accomodates</label>
               <input
                 value={accomodates}
-                ref={this.accomodates}
                 id="accomodates"
                 type="text"
                 className="form-control"
-                onChange={() =>
+                onChange={e =>
                   this.setState({
-                    values: {
-                      ...this.state.values,
-                      accomodates: this.accomodates.current.value
-                    }
+                    ...this.state,
+                    accomodates: e.target.value
                   })
                 }
               />
@@ -137,16 +113,13 @@ class Details extends React.Component {
               <label>Bathrooms</label>
               <input
                 value={bathrooms}
-                ref={this.bathrooms}
                 id="bathrooms"
                 type="text"
                 className="form-control"
-                onChange={() =>
+                onChange={e =>
                   this.setState({
-                    values: {
-                      ...this.state.values,
-                      bathrooms: this.bathrooms.current.value
-                    }
+                    ...this.state,
+                    bathrooms: e.target.value
                   })
                 }
               />
@@ -157,16 +130,5 @@ class Details extends React.Component {
     );
   }
 }
-
-Details.defaultProps = {
-  values: {
-    headline: "",
-    description: "",
-    type: "",
-    bedrooms: "",
-    bathrooms: "",
-    accomodates: ""
-  }
-};
 
 export default Details;

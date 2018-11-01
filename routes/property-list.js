@@ -10,7 +10,7 @@ db.on("error", console.error.bind(console, "MongoDB connection error:"));
 const PropModel = require("../models/property");
 
 router.get(
-  "/PropertyList",
+  "/",
   passport.authenticate("jwt", { session: false }),
   (req, res) => {
     console.log("Inside Property Results Page");
@@ -20,7 +20,8 @@ router.get(
 
       .then(properties => {
         res.code = "200";
-        res.status(200).json({ ...properties });
+        console.log(properties);
+        res.status(200).json(properties);
       })
 
       .catch(error => {
