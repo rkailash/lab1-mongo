@@ -1,6 +1,10 @@
 const express = require("express");
 const router = express.Router();
+
 const passport = require("passport");
+require("../config/passport")(passport);
+router.use(passport.initialize());
+
 const mongoose = require("mongoose");
 const mongoDB = "mongodb://kailashr:passw0rd1@ds237855.mlab.com:37855/homeaway";
 mongoose.connect(mongoDB);
@@ -10,13 +14,13 @@ db.on("error", console.error.bind(console, "MongoDB connection error:"));
 const PropModel = require("../models/property");
 
 router.post(
-  "/Owner",
+  "/",
   passport.authenticate("jwt", { session: false }),
   (req, res) => {
     console.log(req.user.userid);
     console.log("Inside Owner POST request! User id is :", req.user.email);
     let { headline, accomodates, bathrooms, bedrooms, type } = req.body.details;
-    let { price, location } = req.body;
+    let { price, location, photos } = req.body;
     let Name = headline;
     let Sleeps = accomodates;
     let Bathrooms = bathrooms;
@@ -24,6 +28,7 @@ router.post(
     let Type = type;
     let Price = price;
     let Location = location;
+    let Photos = photos;
     console.log("Request body", req.body);
 
     let Property = new PropModel({
@@ -35,17 +40,18 @@ router.post(
       bedrooms: Bedrooms,
       type: Type,
       price: Price,
-      location: Location
+      location: Location,
+      photos: Photos
     });
 
     Property.save()
       .then(property => {
         console.log("Property created : ", property);
-        res.sendStatus(200).json({ ...property });
+        res.status(200).send({ property });
       })
       .catch(err => {
         console.log("Error creating property!", err);
-        res.sendStatus(400).end();
+        res.status(404).send(err);
       });
   }
 );

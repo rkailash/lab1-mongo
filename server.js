@@ -1,6 +1,12 @@
 //Express
 const express = require("express");
 const app = express();
+const cookieParser = require("cookie-parser");
+app.use(cookieParser());
+
+//Cors
+const cors = require("cors");
+app.use(cors({ origin: "http://localhost:8080", credentials: true }));
 
 //Passport
 const passport = require("passport");
@@ -8,17 +14,6 @@ const jwt = require("jsonwebtoken");
 const config = require("./config/settings");
 require("./config/passport")(passport);
 app.use(passport.initialize());
-
-//Express Routes
-const Register_Route = require("./routes/register");
-const Owner_Route = require("./routes/owner-post");
-const Home_Route = require("./routes/home");
-const List_Route = require("./routes/property-list");
-const Property_Route = require("./routes/property-details");
-const TravelerDash_Route = require("./routes/traveler-dashboard");
-const OwnerDash_Route = require("./routes/owner-dashboard");
-const Booking_Route = require("./routes/booking");
-const Photo_Route = require("./routes/photo");
 
 //Body parser
 const bodyParser = require("body-parser");
@@ -28,10 +23,6 @@ app.use(bodyParser.urlencoded({ extended: true }));
 //morgan
 const morgan = require("morgan");
 app.use(morgan("dev"));
-
-//Cors
-const cors = require("cors");
-app.use(cors({ origin: "http://localhost:8080", credentials: true }));
 
 app.set("view engine", "ejs");
 
@@ -51,15 +42,47 @@ app.use(function(req, res, next) {
   next();
 });
 
+//AWS
+const AWS = require("aws-sdk");
+const fs = require("fs");
+const fileType = require("file-type");
+const bluebird = require("bluebird");
+const multiparty = require("multiparty");
+
+// configure the keys for accessing AWS
+AWS.config.update({
+  accessKeyId: "AKIAIU7RVJWKNGZR4RDQ",
+  secretAccessKey: "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"
+});
+
+// configure AWS to work with promises
+AWS.config.setPromisesDependency(bluebird);
+
+// create S3 instance
+const s3 = new AWS.S3();
+
+// abstracts function to upload a file returning a promise
+const uploadFile = (buffer, name, type) => {
+  const params = {
+    ACL: "public-read",
+    Body: buffer,
+    Bucket: "kailashr",
+    ContentType: type.mime,
+    Key: `${name}.${type.ext}`
+  };
+  return s3.upload(params).promise();
+};
+
 //Login Route (needs to be moved to express route)
+
 app.post("/Login", (req, res, next) => {
   console.log("Inside Login route");
   passport.authenticate("local", { session: false }, (error, user) => {
     if (error || !user) {
-      console.log(error);
-      res.status(400).json({ error });
+      console.log("User/Password combination doesn't exist!");
+      res.status(400).send({ error });
     }
-    console.log("Response from authenticate", user);
+    console.log("Logged in user details", user);
     /** This is what ends up in our JWT */
     const payload = {
       email: user.email,
@@ -70,7 +93,7 @@ app.post("/Login", (req, res, next) => {
     /** assigns payload to req.user */
     req.login(payload, { session: false }, error => {
       if (error) {
-        console.log(error);
+        console.log("Payload assign error", error);
         res.status(400).send({ error });
       }
 
@@ -88,15 +111,34 @@ app.post("/Login", (req, res, next) => {
 });
 
 //Other Express Routes
-app.use("/Register", Register_Route);
-app.use("/Owner", Owner_Route);
-app.use("/Home", Home_Route);
-app.use("/PropertyList", List_Route);
-app.use("/Property/:id", Property_Route);
-app.use("/TravelerDash", TravelerDash_Route);
-app.use("/OwnerDash", OwnerDash_Route);
-app.use("/Booking", Booking_Route);
-app.use("/Photo", Photo_Route);
+app.post("/test-upload", (req, res) => {
+  const form = new multiparty.Form();
+  form.parse(req, async (error, fields, files) => {
+    if (error) throw new Error(error);
+    try {
+      const path = files.file[0].path;
+      const buffer = fs.readFileSync(path);
+      const type = fileType(buffer);
+      const timestamp = Date.now().toString();
+      const fileName = `Property/${timestamp}-lg`;
+      const data = await uploadFile(buffer, fileName, type);
+      return res.status(200).send(data);
+    } catch (error) {
+      console.log(error);
+      return res.status(400).send(error);
+    }
+  });
+});
+
+app.use("/Register", require("./routes/register"));
+app.use("/Owner", require("./routes/owner-post"));
+app.use("/Home", require("./routes/home"));
+app.use("/PropertyList", require("./routes/property-list"));
+app.use("/Property", require("./routes/property-details"));
+app.use("/TravelerDash", require("./routes/traveler-dashboard"));
+app.use("/OwnerDash", require("./routes/owner-dashboard"));
+app.use("/Booking", require("./routes/booking"));
+app.use("/Photo", require("./routes/photo"));
 
 //Server listening
 app.listen(3001, () => {
@@ -128,7 +170,7 @@ app.listen(3001, () => {
 // doc.save(err => {
 //   console.log(err);
 // });
-// console.log("Inside Login request");
+// console.log("Inside Login req");
 // UserModel.findOne({ email: req.body.email })
 //   .catch(err => {
 //     throw err;

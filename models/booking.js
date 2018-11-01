@@ -10,6 +10,4 @@ const BookingSchema = Schema({
   enddate: Date
 });
 
-BookingSchema.pre("save", function(next) {});
-
 module.exports = mongoose.model("Booking", BookingSchema);

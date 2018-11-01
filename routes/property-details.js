@@ -8,23 +8,58 @@ let db = mongoose.connection;
 //Bind connection to error event to get notified for connection errors
 db.on("error", console.error.bind(console, "MongoDB connection error:"));
 const PropModel = require("../models/property");
+const BookingModel = require("../models/booking");
+const moment = require("moment");
+moment().format();
 
 router.get(
-  "/Property/:id",
+  "/:id/:startdate/:enddate",
   passport.authenticate("jwt", { session: false }),
   (req, res) => {
     let propertyId = req.params.id;
+    let startDate = req.params.startdate;
+    let endDate = req.params.enddate;
+    let flag = true;
     console.log("Inside Property Page of ID:", propertyId);
-    PropModel.findById(propertyId)
-
+    BookingModel.find({ property: propertyId })
       .then(properties => {
-        res.code = "200";
-        res.status(200).json({ properties });
-      })
+        var booked = properties.filter(value => {
+          return (
+            moment(startDate).isBetween(
+              value.startdate,
+              value.enddate,
+              null,
+              "[]"
+            ) ||
+            moment(endDate).isBetween(
+              value.startdate,
+              value.enddate,
+              null,
+              "[]"
+            )
+          );
+        });
 
+        if (booked.length > 0) {
+          console.log("Flag set to false", booked);
+          flag = false;
+        }
+
+        PropModel.findById(propertyId)
+
+          .then(property => {
+            res.code = "200";
+            res.status(200).json({ Property: property, Available: flag });
+          })
+
+          .catch(error => {
+            console.log("Error in Property model findbyid", error);
+            res.code = "400";
+            res.send = error;
+          });
+      })
       .catch(error => {
-        res.code = "400";
-        res.send = error;
+        console.log("Error in Booking model find", error);
       });
   }
 );

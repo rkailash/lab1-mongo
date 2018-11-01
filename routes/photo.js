@@ -9,8 +9,8 @@ const multiparty = require("multiparty");
 
 // configure the keys for accessing AWS
 AWS.config.update({
-  accessKeyId: "AKIAJTVFBXHK7BVVOVCA",
-  secretAccessKey: "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"
+  accessKeyId: "AKIAIU7RVJWKNGZR4RDQ",
+  secretAccessKey: "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"
 });
 
 // configure AWS to work with promises
@@ -31,7 +31,7 @@ const uploadFile = (buffer, name, type) => {
   return s3.upload(params).promise();
 };
 
-router.post("/test-upload", (request, response) => {
+router.post("/", (request, response) => {
   const form = new multiparty.Form();
   form.parse(request, async (error, fields, files) => {
     if (error) throw new Error(error);
@@ -40,7 +40,7 @@ router.post("/test-upload", (request, response) => {
       const buffer = fs.readFileSync(path);
       const type = fileType(buffer);
       const timestamp = Date.now().toString();
-      const fileName = `bucketFolder/${timestamp}-lg`;
+      const fileName = `Property/${timestamp}-lg`;
       const data = await uploadFile(buffer, fileName, type);
       return response.status(200).send(data);
     } catch (error) {
@@ -49,3 +49,5 @@ router.post("/test-upload", (request, response) => {
     }
   });
 });
+
+module.exports = router;
