@@ -1,10 +1,12 @@
 import React, { Component } from "react";
 import ImageGallery from "templates/ImageGallery";
+import { fetchPropertyDetails } from "actions";
 import axios from "axios";
 import PropertyDetails from "./PropertyDetails";
+import { connect } from "react-redux";
 import Header from "./Header";
 import Search from "./Search";
-import {images} from './images';
+import { images } from "./images";
 import moment from "moment";
 import { Redirect } from "react-router-dom";
 import "styles/productPage.scss";
@@ -26,22 +28,15 @@ class Property extends Component {
     this.state = {
       isFullScreen: false,
       currentImagePos: 0,
-      propertyDetails: undefined,
+      details: undefined,
       goToLogin: false,
       isBookingSuccessful: undefined
     };
   }
   componentDidMount() {
-    this.getPropertyDetails();
+    const id = this.props.match.params.id;
+    this.props.fetchPropertyDetails(id);
   }
-  getPropertyDetails = () => {
-    axios
-      .get(`http://localhost:3001${this.props.location.pathname}`)
-      .then(response => {
-        console.log("GET response :", response.data);
-        this.setState({ propertyDetails: response.data[0] });
-      });
-  };
   openFullScreen = () => {
     this.setState({ isFullScreen: true });
   };
@@ -49,8 +44,8 @@ class Property extends Component {
     this.setState({ isFullScreen: false });
   };
   onBook = () => {
-    if(!this.props.userInfo) {
-      this.setState({goToLogin: true});
+    if (!this.props.userInfo) {
+      this.setState({ goToLogin: true });
     } else {
       const data = {
         propertyid: this.props.location.pathname.split("Property/")[1],
@@ -59,9 +54,9 @@ class Property extends Component {
       };
       axios.post("http://localhost:3001/Booking", data).then(response => {
         console.log("Axios POST response:", response.status);
-  
+
         if (response.status === 200) {
-          console.log('booking success');
+          console.log("booking success");
           this.setState({ isBookingSuccessful: true });
           this.props.setUserInfo(response.data);
         } else {
@@ -73,14 +68,20 @@ class Property extends Component {
   };
 
   render() {
-    console.log(this.props.match.params.id);
-    const { propertyDetails, goToLogin, isFullScreen, isBookingSuccessful, currentImagePos } = this.state;
-    const {userInfo} = this.props;
-    if(goToLogin) {
-      return <Redirect to="/TravellerLogin" />
-    } if(isBookingSuccessful) {
-      return <Redirect to="/Traveler/trips" />
+    const {
+      goToLogin,
+      isFullScreen,
+      isBookingSuccessful,
+      currentImagePos
+    } = this.state;
+    const { userInfo, details } = this.props;
+    if (goToLogin) {
+      return <Redirect to="/TravellerLogin" />;
     }
+    if (isBookingSuccessful) {
+      return <Redirect to="/Traveler/trips" />;
+    }
+    console.log(details);
     return (
       <div className="product-page">
         <div className="headers">
@@ -88,24 +89,27 @@ class Property extends Component {
           <Search query={this.props.query} />
         </div>
         <div className="top-container">
-          <ImageGallery
-            onExpand={() => this.openFullScreen()}
-            onToggle={i => this.setState({ currentImagePos: i })}
-            images={images[userInfo.userid]}
-            isExpandable
-          />
-          {propertyDetails === undefined ? (
+          {details.photos ? (
+            <ImageGallery
+              onExpand={() => this.openFullScreen()}
+              onToggle={i => this.setState({ currentImagePos: i })}
+              images={details.photos}
+              isExpandable
+            />
+          ) : (
+            <div className="gallery-placeholder">
+              <img src="/images/loading.gif" alt="loading"/>
+            </div>
+          )}
+          {details === null ? (
             <div className="loading">Loading...</div>
           ) : (
-            <PropertyDetails
-              item={propertyDetails}
-              onClickBook={() => this.onBook()}
-            />
+            <PropertyDetails item={details} onClickBook={() => this.onBook()} />
           )}
         </div>
         {isFullScreen && (
           <div className="fullscreen-gallery">
-            <ImageGallery images={images[userInfo.userid]} openAt={currentImagePos} />
+            <ImageGallery images={details.photos} openAt={currentImagePos} />
             <button
               type="button"
               className="close-gallery"
@@ -133,4 +137,15 @@ class Property extends Component {
   }
 }
 
-export default Property;
+const mapStateToProps = state => ({
+  details: { ...state.property } || null
+});
+
+const mapDispatchToProps = dispatch => ({
+  fetchPropertyDetails: id => dispatch(fetchPropertyDetails(id))
+});
+
+export default connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(Property);

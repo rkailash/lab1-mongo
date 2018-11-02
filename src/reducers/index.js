@@ -6,7 +6,7 @@ import _ from "lodash";
 const loginInit = {
   account: { email: "", password: "" },
   authFlag: false,
-  showLoginError: false,
+  errorMessage: undefined,
   userInfo: undefined
 };
 const login = (state = loginInit, action) => {
@@ -19,7 +19,7 @@ const login = (state = loginInit, action) => {
     case types.LOGIN_SUCCESS:
       return { ...state, authFlag: true, userInfo: action.data };
     case types.LOGIN_FAILURE:
-      return { ...state, authFlag: false, showLoginError: true };
+      return { ...state, errorMessage: action.data };
     default:
       return state;
   }
@@ -39,7 +39,8 @@ const logout = (state = { isLogoutSuccess: undefined }, action) => {
 const messageObj = [
   {
     id: "1",
-    ownerId: "1",
+    sender: "1",
+    recipient: "2",
     message: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
     timestamp: {
       date: "11/1/17",
@@ -142,6 +143,15 @@ export const ownerdashboard = (state = ownerdashboardInit, action) => {
   }
 };
 
+export const property = (state = {}, action) => {
+  switch (action.type) {
+    case types.SAVE_PROPERTY_DETAILS:
+      return { ...state, ...action.data.details.Property };
+    default:
+      return state;
+  }
+};
+
 const rootReducer = combineReducers({
   messages,
   login,
@@ -150,6 +160,7 @@ const rootReducer = combineReducers({
   home,
   listing,
   ownerdashboard,
+  property,
   toastr: toastrReducer
 });
 

@@ -39,10 +39,9 @@ class Listing extends Component {
             } for you.`}</h4>
             {properties.map((item, key) => (
               <div className="list-item" key={key}>
-                {/* <ImageGallery
-                showThumbnail={false}
-                images={images[this.props.userInfo.userid]}
-              /> */}
+                {item.photos && (
+                  <ImageGallery showThumbnail={false} images={item.photos} />
+                )}
                 <div className="right-container">
                   <div className="top-container">
                     <Link to={`/Property/${item._id}`}>

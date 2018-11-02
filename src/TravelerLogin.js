@@ -28,7 +28,7 @@ class Login extends Component {
     this.setState({ signUpFlag: true });
   };
   render() {
-    const { title, account, authFlag, showLoginError } = this.props;
+    const { title, account, authFlag, errorMessage } = this.props;
     return (
       <div className="login">
         <Header />
@@ -81,9 +81,9 @@ class Login extends Component {
           >
             Log in
           </button>
-          {showLoginError && (
+          {errorMessage && (
             <small className="my-error">
-              Email or password is incorrect.
+              {errorMessage}
             </small>
           )}
         </form>
