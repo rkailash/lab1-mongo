@@ -7,11 +7,11 @@ import { toastr } from "react-redux-toastr";
 import OwnerLogin from "../OwnerLogin";
 
 const mapStateToProps = state => {
-  const { account, authFlag, showLoginError, userInfo } = state.login;
+  const { account, authFlag, errorMessage, userInfo } = state.login;
   return {
     account,
     authFlag,
-    showLoginError,
+    errorMessage,
     userInfo
   };
 };
@@ -33,7 +33,6 @@ class LoginContainer extends Component {
   render() {
     const { authFlag, userInfo } = this.props;
     const { loginType } = this.state;
-    console.log(userInfo);
     if (authFlag) {
       return userInfo.type === "traveler" ? (
         <Redirect to="/Home" />
