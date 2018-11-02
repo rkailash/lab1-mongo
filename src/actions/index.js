@@ -36,10 +36,10 @@ const logoutSuccess = data => {
   };
 };
 
-const logoutFailure = data => {
+const logoutFailure = err => {
   return {
     type: types.LOGOUT_FAILURE,
-    data
+    err
   };
 };
 
@@ -47,6 +47,13 @@ const saveSearchResults = results => {
   return {
     ...results,
     type: types.SAVE_SEARCH_RESULTS
+  };
+};
+
+const savePropertyDetails = data => {
+  return {
+    type: types.SAVE_PROPERTY_DETAILS,
+    data
   };
 };
 
@@ -84,7 +91,7 @@ export const handleLogin = data => {
         dispatch(loginSuccess(res.data));
       },
       err => {
-        dispatch(loginFailure());
+        dispatch(loginFailure(err.response.data));
       }
     );
   };
@@ -125,11 +132,23 @@ export const saveSearch = query => {
 };
 
 export const fetchSearchResults = params => {
-  console.log("params", params);
   return dispatch => {
     return axios.get("http://localhost:3001/PropertyList", { params }).then(
       res => {
         dispatch(saveSearchResults({ properties: res.data }));
+      },
+      err => {
+        console.log("Failed to fetch Search Results!");
+      }
+    );
+  };
+};
+
+export const fetchPropertyDetails = (id, params) => {
+  return dispatch => {
+    return axios.get(`http://localhost:3001/Property/${id}`).then(
+      res => {
+        dispatch(savePropertyDetails({ details: res.data }));
       },
       err => {
         console.log("Failed to fetch Search Results!");

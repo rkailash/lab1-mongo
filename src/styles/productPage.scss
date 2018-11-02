@@ -32,6 +32,12 @@
       flex: none;
       width: 450px;
     }
+    .gallery-placeholder {
+      img {
+        width: auto;
+        height: auto;
+      }
+    }
   }
   .fullscreen-gallery {
     position: fixed;

@@ -6,7 +6,8 @@ const PropSchema = Schema({
     type: String,
     lowercase: true
   },
-  owner: Schema.Types.ObjectId,
+  owner: { type: Schema.Types.ObjectId, ref: "User" },
+  owneremail: String,
   sleeps: Number,
   bathrooms: Number,
   bedrooms: Number,

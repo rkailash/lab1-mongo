@@ -22,6 +22,7 @@ function handle_request(msg, callback) {
     _id: new mongoose.Types.ObjectId(),
     name: Name,
     owner: mongoose.Types.ObjectId(msg.userid),
+    owneremail: msg.email,
     sleeps: Sleeps,
     bathrooms: Bathrooms,
     bedrooms: Bedrooms,
