@@ -1,31 +1,26 @@
 const express = require("express");
 const router = express.Router();
+const kafka = require("../kafka/client");
+//Passport
 const passport = require("passport");
-const mongoose = require("mongoose");
-const mongoDB = "mongodb://kailashr:passw0rd1@ds237855.mlab.com:37855/homeaway";
-mongoose.connect(mongoDB);
-let db = mongoose.connection;
-//Bind connection to error event to get notified for connection errors
-db.on("error", console.error.bind(console, "MongoDB connection error:"));
-
-const PropModel = require("../models/property");
-
-//let sql =
-("SELECT property.*,booking.startdate,booking.enddate FROM property LEFT JOIN booking ON property.propertyid=booking.propertyid WHERE booking.userid=?");
-//let sql =
-//"SELECT property.*,booking.startdate,booking.enddate FROM property LEFT JOIN booking ON property.propertyid=booking.propertyid WHERE booking.userid=?";
+require("../config/passport")(passport);
+router.use(passport.initialize());
 
 router.get(
-  "/TravelerDash",
+  "/",
   passport.authenticate("jwt", { session: false }),
   (req, res) => {
-    PropModel.find({})
-      .catch(err => {
-        throw err;
-      })
-      .then(users => {
-        console.log(users);
-      });
+    console.log("Traveler id :", req.user.userid);
+    let payload = req.user;
+    kafka.make_request("travel_dash", payload, function(err, result) {
+      if (err) {
+        console.log("Error finding properties for traveler :", err);
+        res.status(404).send(err);
+      } else {
+        console.log("Properties", result);
+        res.status(200).send(result);
+      }
+    });
   }
 );
 

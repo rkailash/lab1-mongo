@@ -131,15 +131,14 @@ app.post("/test-upload", (req, res) => {
 });
 app.use("/Login", require("./routes/login"));
 app.use("/Register", require("./routes/register"));
-app.use("/AddProperty", require("./routes/owner-post"));
-app.use("/Home", require("./routes/home"));
 app.use("/PropertyList", require("./routes/property-list"));
 app.use("/Property", require("./routes/property-details"));
+app.use("/AddProperty", require("./routes/add_property"));
 app.use("/TravelerDash", require("./routes/traveler-dashboard"));
 app.use("/OwnerDash", require("./routes/owner-dashboard"));
 app.use("/Booking", require("./routes/booking"));
 app.use("/Photo", require("./routes/photo"));
-
+app.use("/Home", require("./routes/home"));
 //Server listening
 app.listen(3001, () => {
   console.log("Server Listening on port 3001");
