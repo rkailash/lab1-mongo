@@ -98,11 +98,7 @@ class Property extends Component {
             />
           ) : (
             <div className="gallery-placeholder">
-<<<<<<< HEAD
               <img src="/images/loading.gif" alt="loading" />
-=======
-              <img src="/images/loading.gif" alt="loading"/>
->>>>>>> 9f1a4c94d39cf764931d81d9986a6bf17c320730
             </div>
           )}
           {details === null ? (

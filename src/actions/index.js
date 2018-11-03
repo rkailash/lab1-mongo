@@ -155,11 +155,7 @@ export const fetchPropertyDetails = (id, params) => {
       }
     );
   };
-<<<<<<< HEAD
 };
-=======
-}
->>>>>>> 9f1a4c94d39cf764931d81d9986a6bf17c320730
 
 export const addProperty = data => {
   return dispatch => {
